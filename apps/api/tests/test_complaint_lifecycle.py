@@ -118,3 +118,10 @@ def test_submission_rate_limit(client: TestClient) -> None:
         response = client.post("/api/v1/complaints", headers=headers, json={"text": f"Hostel room maintenance concern number {index} requires action today.", "affected_users": 1})
         assert response.status_code == 201
     assert client.post("/api/v1/complaints", headers=headers, json={"text": "Hostel room maintenance concern number six requires action today.", "affected_users": 1}).status_code == 429
+
+
+def test_email_intake_uses_same_pipeline(client: TestClient) -> None:
+    headers = auth_headers(client, "email.intake@gmail.com")
+    response = client.post("/api/v1/intake/email", headers=headers, json={"subject": "No water in Block A", "body": "Hostel Block A has had no water since 8 AM and students cannot prepare for class.", "affected_users": 50})
+    assert response.status_code == 201, response.text
+    assert response.json()["category"] == "HOSTEL"
