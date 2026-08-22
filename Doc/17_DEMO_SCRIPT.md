@@ -4,6 +4,8 @@
 
 "Students can submit complaints today. The harder problem is what happens after submission: duplicate reports, wrong routing, unclear urgency, departmental silos, delayed action, and no reliable feedback loop. Our platform turns a complaint into an accountable workflow."
 
+Demo disclosure: this revision demonstrates the web intake and deterministic offline intelligence fallback. Persistence, authentication, live email/PDF/OCR intake, embeddings, automated SLA escalation, and analytics dashboards are not enabled in this build.
+
 ## Demo 1 — student intake
 
 Show:
@@ -49,13 +51,15 @@ Narration:
 
 "Instead of creating two independent workloads, the system recognizes the shared issue while preserving both students' records."
 
-## Demo 4 — routing
+## Demo 4 — routing (API-backed demo queue)
 
 Show the Hostel queue.
 
 Then explain that the same architecture works for Exam Cell and Academics/HOD.
 
-## Demo 5 — accountability
+## Demo 5 — accountability (lifecycle preview)
+
+The current revision can show the assigned state and due timestamp. Do not claim a live background escalation worker or notification delivery.
 
 Show:
 
@@ -67,9 +71,11 @@ Narration:
 
 "Prioritization only matters if it changes operational behavior. Our SLA engine makes overdue work visible and escalates it."
 
-## Demo 6 — resolution
+## Demo 6 — resolution (API-backed lifecycle)
 
 Resolve from department dashboard.
+
+The API supports resolution, validation, and reopen. Persistence and notifications are not enabled in this revision.
 
 Show:
 

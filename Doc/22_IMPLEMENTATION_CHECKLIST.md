@@ -1,10 +1,12 @@
 # Implementation Checklist
 
+Status legend: `[x]` implemented and present in the repository, `[~]` partial/demo-only, `[ ]` not implemented. This checklist is intentionally honest; architecture documentation is not evidence of a completed feature.
+
 ## Foundation
 
-- [ ] Create repository structure
-- [ ] Configure environment variables
-- [ ] Set up PostgreSQL
+- [x] Create repository structure
+- [~] Configure environment variables
+- [~] Set up PostgreSQL
 - [ ] Create migrations
 - [ ] Implement authentication
 - [ ] Implement RBAC and department scopes
@@ -12,29 +14,29 @@
 ## Student
 
 - [ ] Login/signup
-- [ ] Dashboard
-- [ ] Complaint form
+- [~] Dashboard
+- [x] Complaint form
 - [ ] Attachment support
 - [ ] Complaint history
 - [ ] Status timeline
-- [ ] Validation/reopen
+- [~] Validation/reopen
 
 ## Intelligence
 
-- [ ] Text normalization
-- [ ] Category taxonomy
-- [ ] AI classifier adapter
-- [ ] Confidence threshold
+- [x] Text normalization
+- [x] Category taxonomy
+- [~] AI classifier adapter
+- [x] Confidence threshold
 - [ ] Embedding provider
 - [ ] Similarity search
-- [ ] Duplicate/related decision
-- [ ] Explainable priority engine
+- [~] Duplicate/related decision
+- [x] Explainable priority engine
 
 ## Orchestration
 
-- [ ] Routing rules
-- [ ] Department queues
-- [ ] Assignment
+- [~] Routing rules
+- [~] Department queues
+- [x] Assignment
 - [ ] Cross-department collaboration
 - [ ] Event model
 
@@ -43,9 +45,9 @@
 - [ ] Exam Cell dashboard
 - [ ] Hostel dashboard
 - [ ] Academics/HOD dashboard
-- [ ] Complaint detail
-- [ ] Action history
-- [ ] Resolution
+- [~] Complaint detail
+- [~] Action history
+- [x] Resolution
 
 ## Accountability
 
@@ -53,16 +55,16 @@
 - [ ] Due-soon alerts
 - [ ] Escalation worker
 - [ ] Notification service
-- [ ] Reopen flow
-- [ ] Audit log
+- [x] Reopen flow
+- [~] Audit log
 
 ## Analytics
 
-- [ ] Backlog dashboard
+- [~] Backlog dashboard
 - [ ] SLA dashboard
-- [ ] Category trends
-- [ ] Duplicate clusters
-- [ ] Reopen rate
+- [~] Category trends
+- [~] Duplicate clusters
+- [~] Reopen rate
 - [ ] AI override rate
 
 ## Quality
@@ -76,10 +78,14 @@
 
 ## Presentation
 
-- [ ] Problem slide
-- [ ] Architecture slide
-- [ ] AI pipeline slide
-- [ ] End-to-end demo
-- [ ] Impact metrics
-- [ ] Sustainability
-- [ ] Judge Q&A
+- [x] Problem slide (documentation)
+- [x] Architecture slide (documentation)
+- [x] AI pipeline slide (documentation)
+- [~] End-to-end demo (web/API lifecycle only)
+- [~] Impact metrics (defined, not measured)
+- [x] Sustainability (documentation)
+- [x] Judge Q&A (documentation)
+
+## Deployment decision
+
+**No-go for production.** The unchecked foundation, security, worker, test, and deployment tasks are release blockers. The current safe scope is a local or controlled hackathon demo using synthetic data.

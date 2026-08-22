@@ -72,3 +72,7 @@ The design is intentionally broader than a simple complaint portal. The core pro
 The hackathon MVP should demonstrate the complete loop:
 
 **Student → Intake → AI classification → Duplicate/related detection → Explainable priority → Department routing → Staff action → SLA monitoring → Resolution → Student validation → Archive + analytics.**
+
+## Implementation status
+
+The architecture above is the target design, not a claim that every module is live. See [`25_IMPLEMENTATION_VERIFICATION.md`](./25_IMPLEMENTATION_VERIFICATION.md) for the repository-backed audit. The current revision is suitable for a constrained demo, but it is **not production-deployable** until persistence, authentication/RBAC, background workers, security controls, automated tests, and deployment packaging are complete.
