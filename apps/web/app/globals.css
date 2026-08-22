@@ -16,6 +16,7 @@ h1 { max-width: 720px; margin: 12px 0 15px; font-size: clamp(43px, 6vw, 76px); l
 .lede { max-width: 600px; color: var(--muted); font-size: 18px; line-height: 1.55; }
 .hero-card, .panel, .metric { border: 1px solid var(--line); border-radius: 22px; background: rgba(255,255,255,.82); box-shadow: 0 18px 55px rgba(25, 52, 44, .06); }
 .hero-card { padding: 27px; }
+.login-panel { max-width: 480px; margin: 80px auto; }
 .card-label { color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; }
 .signal { display: flex; justify-content: space-between; padding: 17px 0; border-bottom: 1px solid var(--line); }
 .signal:last-child { border-bottom: 0; padding-bottom: 0; }
