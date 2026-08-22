@@ -125,3 +125,9 @@ def test_email_intake_uses_same_pipeline(client: TestClient) -> None:
     response = client.post("/api/v1/intake/email", headers=headers, json={"subject": "No water in Block A", "body": "Hostel Block A has had no water since 8 AM and students cannot prepare for class.", "affected_users": 50})
     assert response.status_code == 201, response.text
     assert response.json()["category"] == "HOSTEL"
+
+
+def test_health_returns_correlation_id(client: TestClient) -> None:
+    response = client.get("/health", headers={"X-Correlation-Id": "trace-123"})
+    assert response.status_code == 200
+    assert response.headers["X-Correlation-Id"] == "trace-123"
