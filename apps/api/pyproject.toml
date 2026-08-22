@@ -12,10 +12,12 @@ dependencies = [
     "asyncpg>=0.31.0",
     "fastapi[standard]>=0.141.1",
     "pgvector>=0.5.0",
+    "psycopg[binary]>=3.2.0",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",
     "python-jose[cryptography]>=3.5.0",
     "sqlalchemy>=2.0.52",
+    "starlette>=0.46,<1.0",
 ]
 
 [project.scripts]
@@ -27,6 +29,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "aiosqlite>=0.20.0",
     "httpx>=0.28.1",
     "mypy>=2.3.1",
     "pytest>=9.1.1",
@@ -36,3 +39,6 @@ dev = [
 
 [tool.uv]
 package = false
+
+[tool.ruff.lint]
+ignore = ["B008"]
