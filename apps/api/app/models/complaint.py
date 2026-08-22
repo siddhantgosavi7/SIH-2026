@@ -15,6 +15,18 @@ class Department(Base):
     active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
 
+class User(Base, Timestamped):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    department_id: Mapped[str | None] = mapped_column(ForeignKey("departments.id"), index=True)
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
+
+
 class Complaint(Base, Timestamped):
     __tablename__ = "complaints"
 

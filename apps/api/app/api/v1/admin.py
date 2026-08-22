@@ -2,12 +2,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
+from app.domain import Role
+from app.models.complaint import User
 from app.schemas.complaints import AnalyticsRead
+from app.security.auth import require_roles
 from app.services import complaints as complaint_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.get("/analytics", response_model=AnalyticsRead)
-async def analytics(session: AsyncSession = Depends(get_session)) -> AnalyticsRead:
+async def analytics(session: AsyncSession = Depends(get_session), _: User = Depends(require_roles(Role.CENTRAL_ADMIN))) -> AnalyticsRead:
     return await complaint_service.analytics(session)

@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +10,15 @@ class Settings(BaseSettings):
     app_env: str = Field(default="development", alias="APP_ENV")
     database_url: str = Field(default="postgresql+asyncpg://complaint:complaint@localhost:5432/complaint_platform", alias="DATABASE_URL")
     cors_origins: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
+    jwt_secret: str = Field(default="development-only-change-me", alias="JWT_SECRET")
+    jwt_algorithm: str = "HS256"
+    access_token_minutes: int = Field(default=30, alias="ACCESS_TOKEN_MINUTES")
+
+    @model_validator(mode="after")
+    def validate_production_secrets(self) -> "Settings":
+        if self.app_env == "production" and self.jwt_secret == "development-only-change-me":
+            raise ValueError("JWT_SECRET must be set to a secure value in production")
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

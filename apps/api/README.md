@@ -12,4 +12,13 @@ fastapi dev app/main.py
 
 The interactive contract is available at `http://localhost:8000/docs`.
 
-All mutating complaint submissions accept an `Idempotency-Key` header. The demo identity is supplied through `X-Student-Id`; production deployment must replace these headers with an authenticated JWT/SSO dependency and enforce department scope server-side.
+All mutating complaint submissions accept an `Idempotency-Key` header and require a Bearer JWT. Students are restricted to their own complaints; staff are restricted to their department queue; central administrators can access analytics.
+
+## Database and demo users
+
+```powershell
+alembic upgrade head
+python -m app.db.seed
+```
+
+The seed creates controlled demo staff accounts (`admin.sih.demo@gmail.com`, `hostel.sih.demo@gmail.com`, `exams.sih.demo@gmail.com`, and `academics.sih.demo@gmail.com`) with password `DemoPass-2026!`. Change or remove them outside a synthetic demo environment.
