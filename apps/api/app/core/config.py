@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = Field(default=30, alias="ACCESS_TOKEN_MINUTES")
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    upload_dir: str = Field(default="./uploads", alias="UPLOAD_DIR")
+    max_attachment_bytes: int = Field(default=10 * 1024 * 1024, alias="MAX_ATTACHMENT_BYTES")
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":
