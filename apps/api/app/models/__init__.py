@@ -4,7 +4,8 @@ from app.models.complaint import (
     ComplaintAuditEvent,
     Department,
     IdempotencyRecord,
+    Notification,
     User,
 )
 
-__all__ = ["Base", "Complaint", "ComplaintAuditEvent", "Department", "IdempotencyRecord", "User"]
+__all__ = ["Base", "Complaint", "ComplaintAuditEvent", "Department", "IdempotencyRecord", "Notification", "User"]

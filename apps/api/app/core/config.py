@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="development-only-change-me", alias="JWT_SECRET")
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = Field(default=30, alias="ACCESS_TOKEN_MINUTES")
+    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":
