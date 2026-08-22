@@ -99,3 +99,14 @@ def test_student_cannot_read_another_students_complaint(client: TestClient) -> N
     complaint_id = created.json()["complaint_id"]
     assert client.get(f"/api/v1/complaints/{complaint_id}", headers=other_headers).status_code == 403
     assert client.get("/api/v1/admin/analytics", headers=other_headers).status_code == 403
+
+
+def test_attachment_rejects_unsafe_type(client: TestClient) -> None:
+    headers = auth_headers(client, "attachment@gmail.com")
+    created = client.post("/api/v1/complaints", headers=headers, json={"text": "Hostel room light is not working since yesterday morning.", "affected_users": 1})
+    response = client.post(
+        f"/api/v1/intake/complaints/{created.json()['complaint_id']}/attachments",
+        headers=headers,
+        files={"file": ("unsafe.exe", b"binary", "application/octet-stream")},
+    )
+    assert response.status_code == 415
