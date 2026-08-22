@@ -40,7 +40,10 @@ def require_complaint_access(complaint: Complaint, user: User, *, staff_write: b
 
 @router.post("/complaints", response_model=IntakeResponse, status_code=status.HTTP_201_CREATED)
 async def create_complaint(payload: ComplaintCreate, idempotency_key: str | None = Header(default=None), x_correlation_id: str | None = Header(default=None), session: AsyncSession = Depends(get_session), user: User = Depends(require_roles(Role.STUDENT))) -> IntakeResponse:
-    complaint = await complaint_service.create_complaint(session, payload, user.id, idempotency_key, x_correlation_id or uuid4().hex)
+    try:
+        complaint = await complaint_service.create_complaint(session, payload, user.id, idempotency_key, x_correlation_id or uuid4().hex)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(error)) from error
     return IntakeResponse(complaint_id=complaint.id, status=complaint.status, message="Complaint received, classified, and routed for action.")
 
 

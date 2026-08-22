@@ -110,3 +110,11 @@ def test_attachment_rejects_unsafe_type(client: TestClient) -> None:
         files={"file": ("unsafe.exe", b"binary", "application/octet-stream")},
     )
     assert response.status_code == 415
+
+
+def test_submission_rate_limit(client: TestClient) -> None:
+    headers = auth_headers(client, "rate.limit@gmail.com")
+    for index in range(5):
+        response = client.post("/api/v1/complaints", headers=headers, json={"text": f"Hostel room maintenance concern number {index} requires action today.", "affected_users": 1})
+        assert response.status_code == 201
+    assert client.post("/api/v1/complaints", headers=headers, json={"text": "Hostel room maintenance concern number six requires action today.", "affected_users": 1}).status_code == 429

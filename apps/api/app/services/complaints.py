@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -63,6 +63,9 @@ async def create_complaint(session: AsyncSession, payload: ComplaintCreate, stud
             complaint = await get_complaint(session, record.complaint_id)
             if complaint:
                 return complaint
+    submitted_last_hour = await session.scalar(select(func.count()).select_from(Complaint).where(Complaint.student_id == student_id, Complaint.created_at >= now() - timedelta(hours=1)))
+    if submitted_last_hour and submitted_last_hour >= 5:
+        raise ValueError("Complaint submission limit reached; try again later")
     await ensure_departments(session)
     classification = classify(payload.text)
     active = await session.execute(select(Complaint).where(Complaint.status.in_([status.value for status in ACTIVE_STATUSES]), Complaint.category == classification.category))
