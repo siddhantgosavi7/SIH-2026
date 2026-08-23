@@ -80,6 +80,24 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     complaints: Mapped[list["Complaint"]] = relationship(back_populates="student", foreign_keys="Complaint.student_id")
+    student_profile: Mapped["StudentProfile | None"] = relationship(back_populates="user", uselist=False)
+
+
+class StudentProfile(Base):
+    __tablename__ = "student_profiles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    department: Mapped[str] = mapped_column(String(120), nullable=False)
+    prn_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    division: Mapped[str] = mapped_column(String(10), nullable=False)
+    roll_no: Mapped[str] = mapped_column(String(30), nullable=False)
+    year_semester: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    contact_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="student_profile")
 
 
 class DepartmentPolicy(Base):

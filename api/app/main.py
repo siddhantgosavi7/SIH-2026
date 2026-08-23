@@ -14,7 +14,7 @@ from app.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
 from app.intelligence import analyze_complaint
 from app.logging_config import configure_logging
-from app.models import Attachment, AuditLog, Complaint, ComplaintStatus, Notification, Role, User, utcnow
+from app.models import Attachment, AuditLog, Complaint, ComplaintStatus, Notification, Role, StudentProfile, User, utcnow
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
 from app.schemas import (
@@ -28,6 +28,9 @@ from app.schemas import (
     NotificationOut,
     QueueStats,
     ReopenRequest,
+    StudentProfileIn,
+    StudentProfileOut,
+    StudentProfileAdminOut,
     StudentRegister,
     TokenOut,
     UserCreate,
@@ -151,6 +154,109 @@ def list_users(current: User = Depends(get_current_user), db: Session = Depends(
 def list_audit_logs(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[AuditLog]:
     require_role(current, Role.admin)
     return db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(200).all()
+
+
+# ─── Student Profile Endpoints ────────────────────────────────────────────────
+
+@app.get("/students/me/profile", response_model=StudentProfileOut)
+def get_my_profile(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> StudentProfile:
+    """Get the authenticated student's own academic profile."""
+    require_role(current, Role.student)
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current.id).one_or_none()
+    if not profile:
+        raise HTTPException(status_code=404, detail="No academic profile found. Please fill in your details.")
+    return profile
+
+
+@app.put("/students/me/profile", response_model=StudentProfileOut)
+def upsert_my_profile(
+    payload: StudentProfileIn,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudentProfile:
+    """Create or update the authenticated student's academic profile."""
+    require_role(current, Role.student)
+
+    # PRN uniqueness check — reject if another user owns this PRN
+    prn_conflict = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.prn_number == payload.prn_number, StudentProfile.user_id != current.id)
+        .one_or_none()
+    )
+    if prn_conflict:
+        raise HTTPException(status_code=409, detail="PRN already registered to another account.")
+
+    profile = db.query(StudentProfile).filter(StudentProfile.user_id == current.id).one_or_none()
+    if profile:
+        # Update existing
+        profile.full_name = payload.full_name
+        profile.department = payload.department
+        profile.prn_number = payload.prn_number
+        profile.division = payload.division
+        profile.roll_no = payload.roll_no
+        profile.year_semester = payload.year_semester
+        profile.contact_number = payload.contact_number
+        profile.updated_at = utcnow()
+    else:
+        profile = StudentProfile(
+            user_id=current.id,
+            full_name=payload.full_name,
+            department=payload.department,
+            prn_number=payload.prn_number,
+            division=payload.division,
+            roll_no=payload.roll_no,
+            year_semester=payload.year_semester,
+            contact_number=payload.contact_number,
+        )
+        db.add(profile)
+
+    db.flush()
+    write_audit(db, current, "student.profile.upsert", "student_profile", str(current.id), {"prn": payload.prn_number})
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@app.get("/admin/student-profiles", response_model=list[StudentProfileAdminOut])
+def list_student_profiles(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[StudentProfileAdminOut]:
+    """Admin: list all student academic profiles with user info."""
+    require_role(current, Role.admin)
+    rows = (
+        db.query(StudentProfile, User.email, User.username)
+        .join(User, User.id == StudentProfile.user_id)
+        .order_by(StudentProfile.updated_at.desc())
+        .all()
+    )
+    result = []
+    for profile, email, username in rows:
+        out = StudentProfileAdminOut.model_validate(profile)
+        out.user_email = email
+        out.username = username
+        result.append(out)
+    return result
+
+
+@app.get("/admin/student-profiles/{user_id}", response_model=StudentProfileAdminOut)
+def get_student_profile_by_user(
+    user_id: int,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudentProfileAdminOut:
+    """Admin: get one student's academic profile by user_id."""
+    require_role(current, Role.admin)
+    row = (
+        db.query(StudentProfile, User.email, User.username)
+        .join(User, User.id == StudentProfile.user_id)
+        .filter(StudentProfile.user_id == user_id)
+        .one_or_none()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="No academic profile found for this user.")
+    profile, email, username = row
+    out = StudentProfileAdminOut.model_validate(profile)
+    out.user_email = email
+    out.username = username
+    return out
 
 
 @app.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)

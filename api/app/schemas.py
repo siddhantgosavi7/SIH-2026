@@ -43,6 +43,7 @@ class UserOut(BaseModel):
     username: str | None = None
     role: str
     department: str | None
+    student_profile: "StudentProfileOut | None" = None
 
     model_config = {"from_attributes": True}
 
@@ -134,3 +135,50 @@ class AuditEventOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class StudentProfileIn(BaseModel):
+    full_name: str = Field(min_length=2, max_length=255)
+    department: str = Field(min_length=1, max_length=120)
+    prn_number: str = Field(min_length=1, max_length=50, pattern=r'^[0-9A-Za-z]{5,20}$')
+    division: str = Field(min_length=1, max_length=10)
+    roll_no: str = Field(min_length=1, max_length=30, pattern=r'^[0-9]+$')
+    year_semester: str | None = Field(default=None, max_length=30)
+    contact_number: str | None = Field(default=None, max_length=20)
+
+
+class StudentProfileOut(BaseModel):
+    id: int
+    user_id: int
+    full_name: str
+    department: str
+    prn_number: str
+    division: str
+    roll_no: str
+    year_semester: str | None
+    contact_number: str | None
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class StudentProfileAdminOut(BaseModel):
+    id: int
+    user_id: int
+    full_name: str
+    department: str
+    prn_number: str
+    division: str
+    roll_no: str
+    year_semester: str | None
+    contact_number: str | None
+    updated_at: datetime
+    # denormalized user info
+    user_email: str | None = None
+    username: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# Resolve forward reference: UserOut.student_profile references StudentProfileOut defined below
+UserOut.model_rebuild()
