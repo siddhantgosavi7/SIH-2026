@@ -95,6 +95,8 @@ def login(payload: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
     token = create_access_token(str(user.id), user.role, user.department)
+    write_audit(db, user, "user.login", "user", str(user.id), {"email": user.email, "role": user.role})
+    db.commit()
     return TokenOut(access_token=token, role=user.role, department=user.department)
 
 
@@ -110,6 +112,18 @@ def register_student(payload: StudentRegister, db: Session = Depends(get_db)) ->
     db.commit()
     db.refresh(user)
     return user
+
+
+@app.get("/users", response_model=list[UserOut])
+def list_users(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[User]:
+    require_role(current, Role.admin)
+    return db.query(User).order_by(User.created_at.desc()).all()
+
+
+@app.get("/admin/audit-logs", response_model=list[AuditEventOut])
+def list_audit_logs(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[AuditLog]:
+    require_role(current, Role.admin)
+    return db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(200).all()
 
 
 @app.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)

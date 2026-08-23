@@ -32,7 +32,7 @@ export function Login() {
         setToken(adminData.access_token);
         setSession(adminData);
         setMessage('Signed in as Admin');
-        navigate('/myProfile');
+        navigate('/');
         return;
       }
 
@@ -56,7 +56,7 @@ export function Login() {
       setToken(data.access_token);
       setSession(data);
       setMessage('Signed in');
-      navigate('/myProfile');
+      navigate('/');
     } catch (err) {
       setErrorMessage(err.message || 'Invalid email or password');
     } finally {

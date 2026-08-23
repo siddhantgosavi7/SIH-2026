@@ -26,7 +26,7 @@ export default function LoginPage() {
           "session",
           JSON.stringify({ role: "admin", email })
         );
-        router.push("/admin/dashboard");
+        router.push("/");
         return;
       }
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
           const data = await res.json();
           localStorage.setItem("token", data.access_token);
           localStorage.setItem("session", JSON.stringify(data));
-          router.push("/dashboard");
+          router.push("/");
           return;
         }
       } catch {
@@ -70,7 +70,7 @@ export default function LoginPage() {
             "session",
             JSON.stringify({ role: "student", email })
           );
-          router.push("/dashboard");
+          router.push("/");
           return;
         }
       }
