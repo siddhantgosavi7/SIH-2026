@@ -52,7 +52,8 @@ function App() {
 
   async function createComplaint(event) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
     try {
       await api('/complaints', {
         method: 'POST',
@@ -64,7 +65,7 @@ function App() {
           priority: form.get('priority'),
         }),
       });
-      event.currentTarget.reset();
+      formEl.reset();
       setMessage('Complaint created');
       load();
     } catch (err) {
