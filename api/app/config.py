@@ -38,6 +38,11 @@ class Settings(BaseSettings):
             raise ValueError("JWT_SECRET must be at least 32 characters")
         return value
 
+    @field_validator("smtp_host", "smtp_username", "smtp_password", "smtp_from", "oidc_issuer", "oidc_client_id", "oidc_client_secret", mode="before")
+    @classmethod
+    def blank_optional_values_are_none(cls, value: str | None) -> str | None:
+        return value or None
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
