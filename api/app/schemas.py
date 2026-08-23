@@ -9,23 +9,29 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     role: str
-    department: str | None
+    email: str | None = None
+    username: str | None = None
+    department: str | None = None
 
 
 class LoginIn(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=8)
-
-
-class StudentRegister(BaseModel):
-    email: EmailStr
+    username: str = Field(min_length=1)
     password: str = Field(min_length=8)
 
     model_config = {"extra": "forbid"}
 
 
+class StudentRegister(BaseModel):
+    username: str = Field(min_length=2, max_length=50)
+    email: EmailStr
+    password: str = Field(min_length=8)
+
+    model_config = {"extra": "ignore"}
+
+
 class UserCreate(BaseModel):
     email: EmailStr
+    username: str | None = None
     password: str = Field(min_length=8)
     role: Role = Role.student
     department: str | None = None
@@ -34,6 +40,7 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     email: EmailStr
+    username: str | None = None
     role: str
     department: str | None
 

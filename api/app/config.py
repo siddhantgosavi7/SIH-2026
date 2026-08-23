@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Only enable behind a proxy that overwrites X-Forwarded-For. If the header
     # is client-reachable, trusting it lets anyone bypass the rate limiter.
     trust_proxy_headers: bool = False
+    admin_username: str | None = "admin"
     admin_email: str | None = None
     admin_password: str | None = None
     smtp_host: str | None = None

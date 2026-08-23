@@ -21,7 +21,7 @@ users = db.query(User).order_by(User.created_at.desc()).all()
 if not users:
     print("No users found.")
 for u in users:
-    print(f"ID: {u.id:<4} | Email: {u.email:<28} | Role: {u.role:<10} | Created: {u.created_at}")
+    print(f"ID: {u.id:<4} | Username: {str(u.username):<15} | Email: {u.email:<25} | Role: {u.role:<10} | Created: {u.created_at}")
 
 print("\n" + "=" * 60)
 print("               SIGN-IN & AUDIT LOGS")

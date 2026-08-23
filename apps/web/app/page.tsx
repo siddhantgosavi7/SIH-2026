@@ -163,7 +163,7 @@ export default function GIOPPage() {
               Login
             </a>
             <a
-              href="/login"
+              href="/signup"
               className="px-4 py-2 bg-[#0B0B12] hover:bg-black/80 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
             >
               Sign up

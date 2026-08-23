@@ -64,16 +64,22 @@ def startup() -> None:
 def bootstrap_admin(db: Session) -> None:
     if not settings.admin_email or not settings.admin_password:
         return
-    existing = db.query(User).filter(func.lower(User.email) == settings.admin_email.lower()).one_or_none()
+    existing = db.query(User).filter(
+        (func.lower(User.email) == settings.admin_email.lower()) | (func.lower(User.username) == "admin")
+    ).first()
     if not existing:
         db.add(
             User(
                 email=settings.admin_email.lower(),
+                username="admin",
                 hashed_password=hash_password(settings.admin_password),
                 role=Role.admin.value,
                 department=None,
             )
         )
+        db.commit()
+    elif not existing.username:
+        existing.username = "admin"
         db.commit()
 
 
@@ -91,24 +97,45 @@ def ready(db: Session = Depends(get_db)) -> dict:
 @app.post("/auth/login", response_model=TokenOut)
 def login(payload: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
     bootstrap_admin(db)
-    user = db.query(User).filter(func.lower(User.email) == payload.email.lower()).one_or_none()
+    username_input = payload.username.strip()
+
+    if "@" in username_input:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please enter your username, not an email address to log in."
+        )
+
+    user = db.query(User).filter(func.lower(User.username) == username_input.lower()).first()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
     token = create_access_token(str(user.id), user.role, user.department)
-    write_audit(db, user, "user.login", "user", str(user.id), {"email": user.email, "role": user.role})
+    write_audit(db, user, "user.login", "user", str(user.id), {"email": user.email, "username": user.username, "role": user.role})
     db.commit()
-    return TokenOut(access_token=token, role=user.role, department=user.department)
+    return TokenOut(access_token=token, role=user.role, email=user.email, username=user.username, department=user.department)
 
 
 @app.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register_student(payload: StudentRegister, db: Session = Depends(get_db)) -> User:
-    email = payload.email.lower()
-    if db.query(User).filter(func.lower(User.email) == email).one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="email already exists")
-    user = User(email=email, hashed_password=hash_password(payload.password), role=Role.student.value, department=None)
+    email = payload.email.lower().strip()
+    username = payload.username.strip()
+
+    if "@" in username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username cannot be an email address")
+
+    if db.query(User).filter(func.lower(User.email) == email).first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this email already exists")
+    if db.query(User).filter(func.lower(User.username) == username.lower()).first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User with this username already exists")
+    user = User(
+        email=email,
+        username=username,
+        hashed_password=hash_password(payload.password),
+        role=Role.student.value,
+        department=None,
+    )
     db.add(user)
     db.flush()
-    write_audit(db, None, "student.registered", "user", str(user.id), {"email": user.email})
+    write_audit(db, None, "student.registered", "user", str(user.id), {"email": user.email, "username": user.username})
     db.commit()
     db.refresh(user)
     return user

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ClipboardList, Shield, Trash2, Upload, UserPlus, Users, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,6 +7,12 @@ export function MyProfile() {
   const { session, cases, stats, setMessage, api, load, logout } = useAuth();
   const [usersList, setUsersList] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const navigate = useNavigate();
+
+  function handleSignOut() {
+    logout();
+    navigate('/');
+  }
 
   useEffect(() => {
     if (session?.role === 'admin') {
@@ -96,9 +103,11 @@ export function MyProfile() {
               ? 'Central grievance control'
               : 'Department grievance queue'}
           </h1>
-          <p>{session.role}{session.department ? ` · ${session.department}` : ''}</p>
+          <p>
+            {session.username ? `Hi, ${session.username}` : 'Hi, User'}
+          </p>
         </div>
-        <button className="ghost" onClick={logout}>
+        <button className="ghost" onClick={handleSignOut}>
           Sign out
         </button>
       </header>

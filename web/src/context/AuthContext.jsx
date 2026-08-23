@@ -19,7 +19,19 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}), ...(token ? auth : {}) },
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || 'Request failed');
+    const detailMsg = Array.isArray(data.detail)
+      ? data.detail.map((d) => `${d.loc ? d.loc.join('.') + ': ' : ''}${d.msg}`).join(', ')
+      : typeof data.detail === 'string'
+      ? data.detail
+      : typeof data.detail === 'object' && data.detail !== null
+      ? JSON.stringify(data.detail)
+      : 'Request failed';
+    if (!res.ok) {
+      if (res.status === 401) {
+        logout();
+      }
+      throw new Error(detailMsg);
+    }
     return data;
   }
 

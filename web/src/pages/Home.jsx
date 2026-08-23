@@ -204,7 +204,7 @@ export function Home() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate('/login')}
+                  onClick={() => navigate('/signup')}
                   style={{
                     backgroundColor: '#0B0B12',
                     color: '#ffffff',

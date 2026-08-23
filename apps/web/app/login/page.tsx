@@ -7,7 +7,7 @@ import { User, Lock, Compass } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -19,48 +19,44 @@ export default function LoginPage() {
     setErrorMessage("");
     setIsSubmitting(true);
 
+    const cleanUsername = username.trim();
+
+    if (cleanUsername.includes("@")) {
+      setErrorMessage("Please enter your username, not an email address to log in.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      // TEMP: hardcoded admin credential for demo — replace with real role-based auth before production
-      if (email === "admin@gmail.com" && password === "admin@123") {
+      const res = await fetch(`${apiBase}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: cleanUsername, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("session", JSON.stringify(data));
+        router.push("/");
+        return;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || "Invalid username or password");
+      }
+    } catch (err: any) {
+      if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
+        // Fallback only when backend API server is offline
+        const isAdmin = cleanUsername === "admin" && password === "admin@123";
+        localStorage.setItem("token", "demo-offline-token");
         localStorage.setItem(
           "session",
-          JSON.stringify({ role: "admin", email })
+          JSON.stringify({ role: isAdmin ? "admin" : "student", username: cleanUsername })
         );
         router.push("/");
         return;
       }
-
-      // Try backend student login endpoint
-      try {
-        const res = await fetch(`${apiBase}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem("token", data.access_token);
-          localStorage.setItem("session", JSON.stringify(data));
-          router.push("/");
-          return;
-        }
-      } catch {
-        // Fallback for demo when backend is offline
-        if (password.length >= 8) {
-          localStorage.setItem("token", "demo-token");
-          localStorage.setItem(
-            "session",
-            JSON.stringify({ role: "student", email })
-          );
-          router.push("/");
-          return;
-        }
-      }
-
-      setErrorMessage("Invalid email or password");
-    } catch (err: any) {
-      setErrorMessage(err.message || "Invalid email or password");
+      setErrorMessage(err.message || "Invalid username or password");
     } finally {
       setIsSubmitting(false);
     }
@@ -92,11 +88,11 @@ export default function LoginPage() {
             <div className="relative">
               <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
-                type="email"
+                type="text"
                 placeholder="Your username"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 pl-10 pr-3.5 py-3 text-sm font-medium text-[#0B0B12] placeholder-slate-400 bg-white focus:outline-none focus:ring-2 focus:ring-[#3D4FFF] focus:border-transparent transition-all"
               />
             </div>
