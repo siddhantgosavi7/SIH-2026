@@ -279,3 +279,25 @@ textarea {
     flex-direction: column;
   }
 }
+
+/* Landing Page Animations & Styling */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+.animate-float {
+  animation: float 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
