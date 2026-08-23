@@ -97,6 +97,12 @@ function App() {
     load().catch((err) => setMessage(err.message));
   }, [token]);
 
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(''), 3500);
+    return () => clearTimeout(timer);
+  }, [message]);
+
   if (!token) {
     const selectLoginMode = (mode) => {
       setLoginMode(mode);
@@ -189,14 +195,21 @@ function App() {
                       <button title="Resolve" onClick={() => transition(item.id, 'resolved')}><Upload size={16} /></button>
                     </>
                   )}
-                  <button className="btn-delete" title="Delete complaint" onClick={() => deleteComplaint(item.id)}><Trash2 size={16} /></button>
+                  {(session.role === 'student' || item.status === 'resolved' || item.status === 'closed') && (
+                    <button className="btn-delete" title="Delete complaint" onClick={() => deleteComplaint(item.id)}><Trash2 size={16} /></button>
+                  )}
                 </div>
               </article>
             ))}
           </div>
         </section>
       </section>
-      <p className="toast">{message}</p>
+      {message && (
+        <div className="toast-popup" key={message}>
+          <span>{message}</span>
+          <button className="toast-close" onClick={() => setMessage('')}>✕</button>
+        </div>
+      )}
     </main>
   );
 }
