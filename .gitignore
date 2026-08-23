@@ -1,3 +1,4 @@
+.env
 api/.env
 api/.venv/
 api/test-uploads/
