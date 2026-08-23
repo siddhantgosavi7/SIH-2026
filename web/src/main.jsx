@@ -53,19 +53,23 @@ function App() {
   async function createComplaint(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await api('/complaints', {
-      method: 'POST',
-      headers: { 'Idempotency-Key': crypto.randomUUID() },
-      body: JSON.stringify({
-        department: form.get('department'),
-        title: form.get('title'),
-        description: form.get('description'),
-        priority: form.get('priority'),
-      }),
-    });
-    event.currentTarget.reset();
-    setMessage('Complaint created');
-    load();
+    try {
+      await api('/complaints', {
+        method: 'POST',
+        headers: { 'Idempotency-Key': crypto.randomUUID() },
+        body: JSON.stringify({
+          department: form.get('department'),
+          title: form.get('title'),
+          description: form.get('description'),
+          priority: form.get('priority'),
+        }),
+      });
+      event.currentTarget.reset();
+      setMessage('Complaint created');
+      load();
+    } catch (err) {
+      setMessage(err.message);
+    }
   }
 
   async function transition(id, status) {

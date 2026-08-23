@@ -151,9 +151,10 @@ async def create_complaint(
     complaint = Complaint(
         id=str(uuid4()),
         student_id=current.id,
-        department="General Review",
+        department=payload.department or "General Review",
         title=payload.title,
         description=payload.description,
+        priority=payload.priority.value,
         affected_users=payload.affected_users,
     )
     db.add(complaint)
