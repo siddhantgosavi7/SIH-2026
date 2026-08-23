@@ -176,7 +176,7 @@ function StudentInfoTab({ api, setMessage }) {
       <label className="field-label">
         Full Name <span style={{ color: '#e11d48' }}>*</span>
       </label>
-      <input name="full_name" placeholder="e.g. Yash Gosavi" required value={form.full_name} onChange={handleChange} />
+      <input name="full_name" placeholder="e.g. John Doe" required value={form.full_name} onChange={handleChange} />
 
       {/* Department */}
       <label className="field-label">
