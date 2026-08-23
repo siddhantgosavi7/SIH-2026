@@ -1,40 +1,51 @@
-# Resolve — Grievance Intelligence Platform
+# SIH Complaint Platform
 
-Resolve turns unstructured student complaints into a transparent, prioritized, and accountable departmental workflow. It combines the SMA03 intake/routing capability with the MSC02 prioritization capability in one lifecycle:
+Deployable starter for a student complaint system with persistent history, login/RBAC, department queues, SLA escalation, audit log, idempotency, rate limiting, attachment validation, email/PDF intake hooks, pgvector duplicate table, tests, Docker, and CI.
 
-`Submit → Classify → Detect related issues → Prioritize → Route → Assign → Resolve → Validate → Audit`
+## Quick Start
 
-## Current MVP
-
-- FastAPI API with idempotent complaint intake, deterministic explainable classification, priority factors, duplicate clustering, routing, assignment, state-transition validation, resolution, student validation/reopen, analytics, and audit events.
-- Next.js student portal with a responsive intake and activity dashboard.
-- PostgreSQL/pgvector Docker service reserved for the persistence adapter; the current repository adapter keeps the demo runnable without external services.
-
-## Run locally
-
-### API
-
-```powershell
-cd apps/api
-python -m pip install -e ".[dev]"
-$env:PYTHONPATH = "."
-fastapi dev app/main.py
+```bash
+cp api/.env.example api/.env
+docker compose up --build
 ```
 
-API docs: `http://localhost:8000/docs`
+API: `http://localhost:8000`
 
-### Web
+Web: `http://localhost:5173`
 
-```powershell
-cd apps/web
-npm install
-npm run dev
+Docs: `http://localhost:8000/docs`
+
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `api/.env` before first boot. No demo credentials are hard-coded.
+
+The `worker` container runs the RQ queue and re-checks SLAs every
+`SLA_CHECK_INTERVAL_SECONDS` (default 300), escalating breached complaints and
+writing an escalation notification. Delivery goes out over SMTP when `SMTP_HOST`
+and `SMTP_FROM` are set; otherwise the notification is stored and readable at
+`GET /notifications`. `POST /admin/sla-check` forces a check immediately.
+
+## Local API Dev
+
+```bash
+cd api
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload
 ```
 
-Open `http://localhost:3000`. Copy `.env.example` to `.env.local` when the API runs on another URL.
+## Test
 
-## Production hardening roadmap
+```bash
+cd api
+pytest
+```
 
-Replace `ComplaintStore` with SQLAlchemy/PostgreSQL migrations, add institutional authentication and server-side RBAC, move classification/SLA work to a queue, store embeddings in pgvector, and add attachment scanning and rate limiting. The service boundaries already keep those changes isolated from the HTTP contracts.
+## Production Notes
 
-The full product and judge-facing rationale are in [`Doc/README.md`](Doc/README.md) and [`Doc/24_FINAL_ARCHITECTURE.md`](Doc/24_FINAL_ARCHITECTURE.md).
+- Use managed PostgreSQL with daily backups and point-in-time recovery.
+- Use managed Redis or a locked-down Redis service.
+- Put API behind HTTPS reverse proxy/load balancer.
+- Rotate `JWT_SECRET` and all SMTP/OIDC secrets with secret manager.
+- Configure `ALLOWED_ORIGINS` to exact production web domain.
+- Add institutional SSO by setting OIDC env values and replacing `/auth/login` with OIDC callback/token verification.

@@ -1,7 +1,11 @@
-"""Run from a scheduler: python workers/run_sla_check.py."""
+"""Optional cron entrypoint: python workers/run_sla_check.py
 
-from app.workers.queue import get_queue
-from app.workers.sla import run_sla_check
+The worker container already ticks SLA checks on its own interval
+(``app.worker.sla_loop``). Use this only when you would rather drive the check
+from an external scheduler. Run it from the ``api`` directory so ``app`` imports.
+"""
+
+from app.tasks import enqueue_sla_check
 
 if __name__ == "__main__":
-    get_queue().enqueue(run_sla_check, job_timeout=120)
+    enqueue_sla_check()
