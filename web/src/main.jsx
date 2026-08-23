@@ -27,7 +27,8 @@ function App() {
 
   async function login(event) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formEl = event.currentTarget;
+    const form = new FormData(formEl);
     try {
       const data = await api(registering ? '/auth/register' : '/auth/login', {
         method: 'POST',
@@ -35,7 +36,7 @@ function App() {
         headers: {},
       });
       if (registering) {
-        event.currentTarget.reset();
+        formEl.reset();
         setRegistering(false);
         setMessage('Account created. Sign in.');
         return;
@@ -66,31 +67,44 @@ function App() {
         }),
       });
       formEl.reset();
-      setMessage('Complaint created');
-      load();
+      setMessage('Complaint submitted successfully');
+      await load();
     } catch (err) {
       setMessage(err.message);
     }
   }
 
   async function transition(id, status) {
-    await api(`/complaints/${id}/transition`, { method: 'PATCH', body: JSON.stringify({ status }) });
-    load();
+    try {
+      await api(`/complaints/${id}/transition`, { method: 'PATCH', body: JSON.stringify({ status }) });
+      setMessage(`Complaint ${status.replace('_', ' ')} successfully`);
+      await load();
+    } catch (err) {
+      setMessage(err.message);
+    }
   }
 
   async function deleteComplaint(id) {
-    if (!confirm('Are you sure you want to delete this complaint? It will be removed from your view but the history will be preserved.')) return;
-    await api(`/complaints/${id}`, { method: 'DELETE' });
-    setMessage('Complaint deleted');
-    load();
+    if (!confirm('Are you sure you want to delete this complaint?')) return;
+    try {
+      await api(`/complaints/${id}`, { method: 'DELETE' });
+      setMessage('Complaint deleted successfully');
+      await load();
+    } catch (err) {
+      setMessage(err.message);
+    }
   }
 
   async function load() {
     if (!token) return;
-    const list = await api('/complaints');
-    setCases(list);
-    if (session?.role !== 'student') {
-      setStats(await api('/dashboard/department'));
+    try {
+      const list = await api('/complaints');
+      setCases(list);
+      if (session?.role !== 'student') {
+        setStats(await api('/dashboard/department'));
+      }
+    } catch (err) {
+      setMessage(err.message);
     }
   }
 
