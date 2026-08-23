@@ -26,16 +26,20 @@ function App() {
   async function login(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const data = await api('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
-      headers: {},
-    });
-    localStorage.setItem('token', data.access_token);
-    localStorage.setItem('session', JSON.stringify(data));
-    setToken(data.access_token);
-    setSession(data);
-    setMessage('Signed in');
+    try {
+      const data = await api('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
+        headers: {},
+      });
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('session', JSON.stringify(data));
+      setToken(data.access_token);
+      setSession(data);
+      setMessage('Signed in');
+    } catch (err) {
+      setMessage(err.message);
+    }
   }
 
   async function createComplaint(event) {
