@@ -28,10 +28,8 @@ def make_complaint(client, student_token, title="Attach case"):
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
         json={
-            "department": "Hostel",
             "title": title,
-            "description": "Description long enough to pass validation.",
-            "priority": "normal",
+            "description": "Hostel water supply needs maintenance for residents.",
         },
     ).json()
 

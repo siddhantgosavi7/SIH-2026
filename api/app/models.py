@@ -40,6 +40,7 @@ class Base(DeclarativeBase):
 class Role(str, enum.Enum):
     student = "student"
     staff = "staff"
+    department_head = "department_head"
     admin = "admin"
 
 
@@ -77,7 +78,18 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
-    complaints: Mapped[list["Complaint"]] = relationship(back_populates="student")
+    complaints: Mapped[list["Complaint"]] = relationship(back_populates="student", foreign_keys="Complaint.student_id")
+
+
+class DepartmentPolicy(Base):
+    __tablename__ = "department_policies"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    category: Mapped[str] = mapped_column(String(80), nullable=False)
+    keywords: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    sla_hours: Mapped[int] = mapped_column(Integer, default=48, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
 class Complaint(Base):
@@ -86,6 +98,13 @@ class Complaint(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
     department: Mapped[str] = mapped_column(String(120), index=True, nullable=False)
+    category: Mapped[str] = mapped_column(String(80), nullable=False, default="General")
+    subcategory: Mapped[str | None] = mapped_column(String(120))
+    classification_confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    priority_reasons: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    source: Mapped[str] = mapped_column(String(32), default="web", nullable=False)
+    affected_users: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    assigned_to_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
     title: Mapped[str] = mapped_column(String(240), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), index=True, default=ComplaintStatus.open.value, nullable=False)
@@ -97,6 +116,19 @@ class Complaint(Base):
 
     student: Mapped[User] = relationship(back_populates="complaints", foreign_keys=[student_id])
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="complaint")
+
+
+class ComplaintRelation(Base):
+    __tablename__ = "complaint_relations"
+    __table_args__ = (UniqueConstraint("source_complaint_id", "target_complaint_id", name="uq_complaint_relation"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.id"), nullable=False, index=True)
+    target_complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.id"), nullable=False, index=True)
+    relation_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    similarity_score: Mapped[float] = mapped_column(Float, nullable=False)
+    explanation: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class Attachment(Base):

@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 import redis
 
 from app.config import settings
-from app.models import Complaint, ComplaintEmbedding, ComplaintStatus, Notification, Priority
+from app.models import Complaint, ComplaintEmbedding, ComplaintStatus, Notification
 
 
 def get_queue() -> Queue:
@@ -53,10 +53,6 @@ def process_ai(complaint_id: str) -> None:
         if not complaint:
             return
         text = f"{complaint.title} {complaint.description}".lower()
-        if any(word in text for word in ["unsafe", "harassment", "threat", "medical", "violence"]):
-            complaint.priority = Priority.urgent.value
-        elif any(word in text for word in ["broken", "urgent", "exam", "fee"]):
-            complaint.priority = Priority.high.value
         embedding = _deterministic_embedding(text)
         if db.bind and db.bind.dialect.name == "postgresql":
             distance = ComplaintEmbedding.embedding.l2_distance(embedding).label("distance")

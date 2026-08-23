@@ -12,8 +12,9 @@ from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
+from app.intelligence import analyze_complaint
 from app.logging_config import configure_logging
-from app.models import Attachment, Complaint, ComplaintStatus, Notification, Priority, Role, User
+from app.models import Attachment, Complaint, ComplaintStatus, Notification, Role, User
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
 from app.schemas import (
@@ -42,7 +43,7 @@ TRANSITIONS = {
 }
 
 configure_logging()
-app = FastAPI(title="SIH Complaint Platform", version="1.0.0", dependencies=[Depends(RateLimiter())])
+app = FastAPI(title="Grievance Intelligence & Orchestration Platform", version="1.0.0", dependencies=[Depends(RateLimiter())])
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -147,13 +148,15 @@ async def create_complaint(
     complaint = Complaint(
         id=str(uuid4()),
         student_id=current.id,
-        department=payload.department,
+        department="General Review",
         title=payload.title,
         description=payload.description,
-        priority=payload.priority.value,
+        affected_users=payload.affected_users,
     )
     db.add(complaint)
-    write_audit(db, current, "complaint.created", "complaint", complaint.id, {"department": complaint.department})
+    db.flush()
+    analyze_complaint(db, complaint)
+    write_audit(db, current, "complaint.created", "complaint", complaint.id, {"department": complaint.department, "category": complaint.category, "priority": complaint.priority})
     db.commit()
     db.refresh(complaint)
     response = ComplaintOut.model_validate(complaint).model_dump(mode="json")
@@ -250,8 +253,10 @@ async def add_attachment(
 @app.post("/intake/email", response_model=ComplaintOut, status_code=status.HTTP_201_CREATED)
 def intake_email(payload: ComplaintCreate, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Complaint:
     require_role(current, Role.staff, Role.admin)
-    complaint = Complaint(id=str(uuid4()), student_id=current.id, department=payload.department, title=payload.title, description=payload.description, priority=payload.priority.value)
+    complaint = Complaint(id=str(uuid4()), student_id=current.id, department="General Review", title=payload.title, description=payload.description, affected_users=payload.affected_users, source="email")
     db.add(complaint)
+    db.flush()
+    analyze_complaint(db, complaint)
     write_audit(db, current, "intake.email.created", "complaint", complaint.id)
     db.commit()
     db.refresh(complaint)
@@ -261,7 +266,6 @@ def intake_email(payload: ComplaintCreate, current: User = Depends(get_current_u
 
 @app.post("/intake/pdf", response_model=ComplaintOut, status_code=status.HTTP_201_CREATED)
 async def intake_pdf(
-    department: str,
     title: str,
     file: UploadFile = File(...),
     current: User = Depends(get_current_user),
@@ -273,9 +277,10 @@ async def intake_pdf(
     content = await file.read()
     if len(content) > settings.max_upload_bytes:
         raise HTTPException(status_code=413, detail="attachment too large")
-    complaint = Complaint(id=str(uuid4()), student_id=current.id, department=department, title=title, description=f"PDF intake: {file.filename}", priority=Priority.normal.value)
+    complaint = Complaint(id=str(uuid4()), student_id=current.id, department="General Review", title=title, description=f"PDF intake: {file.filename}", source="pdf")
     db.add(complaint)
     db.flush()
+    analyze_complaint(db, complaint)
     target = settings.upload_path / f"{uuid4()}-{Path(file.filename or 'intake.pdf').name}"
     target.write_bytes(content)
     db.add(Attachment(complaint_id=complaint.id, filename=file.filename or "intake.pdf", content_type="application/pdf", size_bytes=len(content), storage_path=str(target)))

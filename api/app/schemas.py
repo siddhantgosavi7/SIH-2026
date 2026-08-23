@@ -41,10 +41,9 @@ class UserOut(BaseModel):
 
 
 class ComplaintCreate(BaseModel):
-    department: str = Field(min_length=2, max_length=120)
     title: str = Field(min_length=3, max_length=240)
     description: str = Field(min_length=10)
-    priority: Priority = Priority.normal
+    affected_users: int = Field(default=1, ge=1, le=100000)
 
 
 class ComplaintTransition(BaseModel):
@@ -56,10 +55,17 @@ class ComplaintOut(BaseModel):
     id: str
     student_id: int
     department: str
+    category: str
+    subcategory: str | None
+    classification_confidence: float
     title: str
     description: str
     status: str
     priority: str
+    priority_reasons: list[str]
+    source: str
+    affected_users: int
+    assigned_to_id: int | None
     sla_due_at: datetime
     duplicate_of_id: str | None
     created_at: datetime
