@@ -17,6 +17,13 @@ class LoginIn(BaseModel):
     password: str = Field(min_length=8)
 
 
+class StudentRegister(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+
+    model_config = {"extra": "forbid"}
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)

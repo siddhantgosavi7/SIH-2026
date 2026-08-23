@@ -11,6 +11,7 @@ function App() {
   const [cases, setCases] = useState([]);
   const [stats, setStats] = useState(null);
   const [message, setMessage] = useState('');
+  const [registering, setRegistering] = useState(false);
   const auth = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   async function api(path, options = {}) {
@@ -27,11 +28,17 @@ function App() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     try {
-      const data = await api('/auth/login', {
+      const data = await api(registering ? '/auth/register' : '/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email: form.get('email'), password: form.get('password') }),
         headers: {},
       });
+      if (registering) {
+        event.currentTarget.reset();
+        setRegistering(false);
+        setMessage('Account created. Sign in.');
+        return;
+      }
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('session', JSON.stringify(data));
       setToken(data.access_token);
@@ -83,12 +90,17 @@ function App() {
       <main className="auth">
         <section className="panel login">
           <LogIn size={28} />
-          <h1>SIH Complaint Desk</h1>
+          <p className="eyebrow">Grievance Intelligence &amp; Orchestration</p>
+          <h1>{registering ? 'Create Student Account' : 'Sign in to your workspace'}</h1>
+          <p className="helper">{registering ? 'Student accounts can only access their own cases.' : 'Students, department staff, and administrators see only their authorized workspace.'}</p>
           <form onSubmit={login}>
             <input name="email" type="email" placeholder="Email" required />
             <input name="password" type="password" placeholder="Password" minLength="8" required />
-            <button>Sign in</button>
+            <button>{registering ? 'Create student account' : 'Sign in'}</button>
           </form>
+          <button className="ghost" type="button" onClick={() => { setRegistering(!registering); setMessage(''); }}>
+            {registering ? 'I already have an account' : 'New student? Create account'}
+          </button>
           <p>{message}</p>
         </section>
       </main>
@@ -99,7 +111,8 @@ function App() {
     <main className="app">
       <header>
         <div>
-          <h1>Complaint Desk</h1>
+          <p className="eyebrow">Grievance Intelligence &amp; Orchestration</p>
+          <h1>{session.role === 'student' ? 'My grievance workspace' : session.role === 'admin' ? 'Central grievance control' : 'Department grievance queue'}</h1>
           <p>{session.role}{session.department ? ` · ${session.department}` : ''}</p>
         </div>
         <button className="ghost" onClick={() => { localStorage.clear(); setToken(''); }}>
@@ -119,10 +132,11 @@ function App() {
       )}
 
       <section className="layout">
-        {session.role !== 'staff' && (
+        {session.role === 'student' && (
           <form className="panel form" onSubmit={createComplaint}>
             <ClipboardList size={22} />
-            <h2>New Complaint</h2>
+            <h2>Submit a grievance</h2>
+            <p className="helper">Describe issue clearly. Priority and routing remain subject to authorized review.</p>
             <input name="department" placeholder="Department" required />
             <input name="title" placeholder="Title" required />
             <textarea name="description" placeholder="Describe issue" required />
@@ -138,7 +152,8 @@ function App() {
 
         <section className="panel queue">
           <Shield size={22} />
-          <h2>{session.role === 'student' ? 'My History' : 'Department Queue'}</h2>
+          <h2>{session.role === 'student' ? 'My case history' : session.role === 'admin' ? 'All institutional cases' : 'My department queue'}</h2>
+          <p className="helper">{session.role === 'student' ? 'Only you can see these cases.' : session.role === 'admin' ? 'Central administrators can oversee all cases.' : 'Server-side scope restricts this queue to your department.'}</p>
           <div className="cases">
             {cases.map((item) => (
               <article className="case" key={item.id}>

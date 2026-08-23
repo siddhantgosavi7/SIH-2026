@@ -63,6 +63,20 @@ header p,
   color: #64748b;
 }
 
+.eyebrow {
+  color: #176b87;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.helper {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .ghost {
   background: #e7edf2;
   color: #1d2630;

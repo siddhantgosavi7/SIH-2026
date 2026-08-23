@@ -24,6 +24,7 @@ from app.schemas import (
     LoginIn,
     NotificationOut,
     QueueStats,
+    StudentRegister,
     TokenOut,
     UserCreate,
     UserOut,
@@ -91,6 +92,20 @@ def login(payload: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
     token = create_access_token(str(user.id), user.role, user.department)
     return TokenOut(access_token=token, role=user.role, department=user.department)
+
+
+@app.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def register_student(payload: StudentRegister, db: Session = Depends(get_db)) -> User:
+    email = payload.email.lower()
+    if db.query(User).filter(func.lower(User.email) == email).one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="email already exists")
+    user = User(email=email, hashed_password=hash_password(payload.password), role=Role.student.value, department=None)
+    db.add(user)
+    db.flush()
+    write_audit(db, None, "student.registered", "user", str(user.id), {"email": user.email})
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @app.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
