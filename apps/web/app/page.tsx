@@ -17,6 +17,8 @@ import {
   X,
 } from "lucide-react";
 
+import { useRouter } from 'next/navigation';
+
 /* =========================================================
    CONSTANTS
 ========================================================= */
@@ -747,6 +749,14 @@ export default function HomePage() {
     "accuracy" | "latency" | "coverage"
   >("accuracy");
 
+  const router = useRouter();
+
+  const handleRedirect = () => {
+    router.push('/Signup');
+    console.log("To Signup");
+    
+  };
+
   return (
     <main
       style={{
@@ -860,6 +870,7 @@ export default function HomePage() {
               key={item}
               href="#"
               className="giop-nav-link"
+              style={{textDecoration:'none'}}
             >
               {item}
             </a>
@@ -904,6 +915,7 @@ export default function HomePage() {
               borderRadius: 8,
               cursor: "pointer",
             }}
+            onClick={handleRedirect}
           >
             Sign up
           </button>
@@ -960,26 +972,6 @@ export default function HomePage() {
               Classify, prioritize, and route every complaint
               across every department.
             </p>
-          </Reveal>
-
-          <Reveal delay={140}>
-            <button
-              type="button"
-              className="giop-black-btn"
-              style={{
-                background: C.ink,
-                border: "none",
-                color: "#fff",
-                fontSize: 14.5,
-                fontWeight: 700,
-                padding: "13px 26px",
-                borderRadius: 10,
-                cursor: "pointer",
-                marginBottom: 48,
-              }}
-            >
-              Try the dashboard
-            </button>
           </Reveal>
         </div>
 
@@ -1348,133 +1340,7 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* =====================================================
-          RESPONSIVE / GLOBAL STYLES
-      ===================================================== */}
 
-      {/* <style jsx global>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        html {
-          scroll-behavior: smooth;
-        }
-
-        body {
-          margin: 0;
-        }
-
-        .giop-nav-link {
-          color: ${C.gray};
-          text-decoration: none;
-          font-size: 14px;
-          transition: color 160ms ease;
-        }
-
-        .giop-nav-link:hover {
-          color: ${C.ink};
-        }
-
-        .giop-black-btn {
-          transition:
-            transform 160ms ease,
-            background 160ms ease;
-        }
-
-        .giop-black-btn:hover {
-          transform: translateY(-1px);
-          background: #23262f !important;
-        }
-
-        .giop-ghost-btn {
-          transition: background 160ms ease;
-        }
-
-        .giop-ghost-btn:hover {
-          background: #f0f1f4 !important;
-        }
-
-        @media (max-width: 1100px) {
-          .giop-nav-links {
-            display: none !important;
-          }
-
-          .giop-departments-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-
-          .giop-benchmark-section {
-            grid-template-columns: 1fr !important;
-          }
-
-          .giop-footer-grid {
-            grid-template-columns: repeat(3, 1fr) !important;
-          }
-        }
-
-        @media (max-width: 900px) {
-          .giop-collage {
-            display: none !important;
-          }
-
-          .giop-nav-actions button:first-child {
-            display: none;
-          }
-
-          .giop-nav-actions {
-            gap: 0 !important;
-          }
-        }
-
-        @media (max-width: 700px) {
-          .giop-departments-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-
-          .giop-footer-grid {
-            grid-template-columns: 1fr 1fr !important;
-          }
-
-          .giop-benchmark-section > div {
-            padding: 50px 24px !important;
-          }
-
-          nav {
-            padding: 16px 20px !important;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .giop-departments-grid {
-            grid-template-columns: 1fr !important;
-          }
-
-          .giop-footer-grid {
-            grid-template-columns: 1fr !important;
-          }
-
-          section {
-            padding-left: 20px !important;
-            padding-right: 20px !important;
-          }
-
-          h1 {
-            font-size: 2.5rem !important;
-          }
-        }
-
-        @media (max-width: 520px) {
-          .giop-nav-actions .giop-black-btn {
-            padding: 9px 13px !important;
-          }
-
-          footer {
-            padding-left: 24px !important;
-            padding-right: 24px !important;
-          }
-        }
-      `}</style> */}
     </main>
   );
 }
