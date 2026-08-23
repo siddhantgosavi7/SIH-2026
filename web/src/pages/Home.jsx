@@ -191,6 +191,21 @@ export function Home() {
                   type="button"
                   onClick={() => navigate('/login')}
                   style={{
+                    backgroundColor: '#3D4FFF',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    borderRadius: '12px',
+                    padding: '8px 16px',
+                    minHeight: 'auto',
+                  }}
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/login')}
+                  style={{
                     backgroundColor: '#0B0B12',
                     color: '#ffffff',
                     fontSize: '13px',

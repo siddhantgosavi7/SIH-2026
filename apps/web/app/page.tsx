@@ -156,12 +156,18 @@ export default function GIOPPage() {
             >
               Contact admin
             </button>
-            <button
-              type="button"
+            <a
+              href="/login"
+              className="px-4 py-2 bg-[#3D4FFF] hover:bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
+            >
+              Login
+            </a>
+            <a
+              href="/login"
               className="px-4 py-2 bg-[#0B0B12] hover:bg-black/80 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
             >
               Sign up
-            </button>
+            </a>
           </div>
         </div>
       </nav>
