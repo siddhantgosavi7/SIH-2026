@@ -1,91 +1,29 @@
 # Implementation Checklist
 
-Status legend: `[x]` implemented and present in the repository, `[~]` partial/demo-only, `[ ]` not implemented. This checklist is intentionally honest; architecture documentation is not evidence of a completed feature.
+Status: `[x]` present, `[~]` partial, `[ ]` absent. Canonical stack is root
+`api/`, `web/`, and `docker-compose.yml`.
 
-## Foundation
+## SIH demo minimum
 
-- [x] Create repository structure
-- [~] Configure environment variables
-- [~] Set up PostgreSQL
-- [ ] Create migrations
-- [ ] Implement authentication
-- [ ] Implement RBAC and department scopes
+- [x] PostgreSQL persistence, Alembic migrations, pgvector extension
+- [x] JWT login and server-side RBAC
+- [x] Department-scoped API queue and dashboard statistics
+- [x] Persistent complaint/audit history
+- [x] Redis/RQ worker, SLA escalation, persisted notifications
+- [x] API lifecycle, RBAC, regression tests and AI evaluation fixtures
+- [x] API/web Dockerfiles, Compose, CI workflow, deployment guide
 
-## Student
+## Remaining production work
 
-- [ ] Login/signup
-- [~] Dashboard
-- [x] Complaint form
-- [ ] Attachment support
-- [ ] Complaint history
-- [ ] Status timeline
-- [~] Validation/reopen
-
-## Intelligence
-
-- [x] Text normalization
-- [x] Category taxonomy
-- [~] AI classifier adapter
-- [x] Confidence threshold
-- [ ] Embedding provider
-- [ ] Similarity search
-- [~] Duplicate/related decision
-- [x] Explainable priority engine
-
-## Orchestration
-
-- [~] Routing rules
-- [~] Department queues
-- [x] Assignment
-- [ ] Cross-department collaboration
-- [ ] Event model
-
-## Department
-
-- [ ] Exam Cell dashboard
-- [ ] Hostel dashboard
-- [ ] Academics/HOD dashboard
-- [~] Complaint detail
-- [~] Action history
-- [x] Resolution
-
-## Accountability
-
-- [ ] SLA policies
-- [ ] Due-soon alerts
-- [ ] Escalation worker
-- [ ] Notification service
-- [x] Reopen flow
-- [~] Audit log
-
-## Analytics
-
-- [~] Backlog dashboard
-- [ ] SLA dashboard
-- [~] Category trends
-- [~] Duplicate clusters
-- [~] Reopen rate
-- [ ] AI override rate
-
-## Quality
-
-- [ ] Functional tests
-- [ ] AI evaluation dataset
-- [ ] Security tests
-- [ ] Load test
-- [ ] Failure-mode test
-- [ ] Demo seed data
-
-## Presentation
-
-- [x] Problem slide (documentation)
-- [x] Architecture slide (documentation)
-- [x] AI pipeline slide (documentation)
-- [~] End-to-end demo (web/API lifecycle only)
-- [~] Impact metrics (defined, not measured)
-- [x] Sustainability (documentation)
-- [x] Judge Q&A (documentation)
+- [~] Real embedding provider and semantic duplicate search
+- [~] Live web dashboard verification against Compose API
+- [~] Attachments: malware scanning and object storage
+- [~] Inbound email provider/webhook and PDF text/OCR extraction
+- [~] Outbox, job retry/dead-letter policy, scalable SLA scheduler
+- [~] Cloud domain, HTTPS, secret manager, managed DB/Redis, backup restore drill
+- [ ] Institutional OIDC/SSO integration
+- [ ] Compose build/runtime verification on this machine
 
 ## Deployment decision
 
-**No-go for production.** The unchecked foundation, security, worker, test, and deployment tasks are release blockers. The current safe scope is a local or controlled hackathon demo using synthetic data.
+**SIH demo: go after local Docker verification. Production data: no-go until remaining production work is complete.**
