@@ -12,6 +12,7 @@ function App() {
   const [stats, setStats] = useState(null);
   const [message, setMessage] = useState('');
   const [registering, setRegistering] = useState(false);
+  const [loginMode, setLoginMode] = useState('student');
   const auth = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   async function api(path, options = {}) {
@@ -86,21 +87,30 @@ function App() {
   }, [token]);
 
   if (!token) {
+    const selectLoginMode = (mode) => {
+      setLoginMode(mode);
+      setRegistering(false);
+      setMessage('');
+    };
     return (
       <main className="auth">
         <section className="panel login">
           <LogIn size={28} />
           <p className="eyebrow">Grievance Intelligence &amp; Orchestration</p>
-          <h1>{registering ? 'Create Student Account' : 'Sign in to your workspace'}</h1>
-          <p className="helper">{registering ? 'Student accounts can only access their own cases.' : 'Students, department staff, and administrators see only their authorized workspace.'}</p>
+          <h1>{registering ? 'Create Student Account' : loginMode === 'student' ? 'Student sign in' : 'Admin & staff sign in'}</h1>
+          <div className="login-modes">
+            <button className={loginMode === 'student' ? 'mode active' : 'mode'} type="button" onClick={() => selectLoginMode('student')}>Student</button>
+            <button className={loginMode === 'admin' ? 'mode active' : 'mode'} type="button" onClick={() => selectLoginMode('admin')}>Admin / staff</button>
+          </div>
+          <p className="helper">{registering ? 'Student accounts can only access their own cases.' : loginMode === 'student' ? 'Students see only their own grievance history.' : 'Administrators see all cases. Staff see only their department queue.'}</p>
           <form onSubmit={login}>
             <input name="email" type="email" placeholder="Email" required />
             <input name="password" type="password" placeholder="Password" minLength="8" required />
             <button>{registering ? 'Create student account' : 'Sign in'}</button>
           </form>
-          <button className="ghost" type="button" onClick={() => { setRegistering(!registering); setMessage(''); }}>
+          {loginMode === 'student' && <button className="ghost" type="button" onClick={() => { setRegistering(!registering); setMessage(''); }}>
             {registering ? 'I already have an account' : 'New student? Create account'}
-          </button>
+          </button>}
           <p>{message}</p>
         </section>
       </main>

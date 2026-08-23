@@ -77,6 +77,22 @@ header p,
   line-height: 1.45;
 }
 
+.login-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode {
+  background: #e7edf2;
+  color: #1d2630;
+}
+
+.mode.active {
+  background: #176b87;
+  color: white;
+}
+
 .ghost {
   background: #e7edf2;
   color: #1d2630;
