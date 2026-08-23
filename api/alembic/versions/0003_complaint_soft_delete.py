@@ -14,7 +14,15 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("complaints", sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True))
+    conn = op.get_bind()
+    result = conn.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.columns "
+            "WHERE table_name='complaints' AND column_name='deleted_at'"
+        )
+    )
+    if not result.fetchone():
+        op.add_column("complaints", sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True))
 
 
 def downgrade():
