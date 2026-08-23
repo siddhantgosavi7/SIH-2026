@@ -4,7 +4,7 @@
 
 "Students can submit complaints today. The harder problem is what happens after submission: duplicate reports, wrong routing, unclear urgency, departmental silos, delayed action, and no reliable feedback loop. Our platform turns a complaint into an accountable workflow."
 
-Demo disclosure: this revision demonstrates the web intake and deterministic offline intelligence fallback. Persistence, authentication, live email/PDF/OCR intake, embeddings, automated SLA escalation, and analytics dashboards are not enabled in this build.
+Demo disclosure: this revision demonstrates JWT/RBAC, PostgreSQL persistence, web/API email/PDF intake, deterministic offline intelligence, RQ SLA escalation, and persisted notifications. Do not claim OCR, inbound email mailbox automation, semantic AI embeddings, or analytics forecasting.
 
 ## Demo 1 — student intake
 
@@ -57,9 +57,9 @@ Show the Hostel queue.
 
 Then explain that the same architecture works for Exam Cell and Academics/HOD.
 
-## Demo 5 — accountability (lifecycle preview)
+## Demo 5 — accountability
 
-The current revision can show the assigned state and due timestamp. Do not claim a live background escalation worker or notification delivery.
+The worker checks overdue complaints at `SLA_CHECK_INTERVAL_SECONDS`; `POST /admin/sla-check` demonstrates it immediately.
 
 Show:
 
@@ -75,7 +75,7 @@ Narration:
 
 Resolve from department dashboard.
 
-The API supports resolution, validation, and reopen. Persistence and notifications are not enabled in this revision.
+The API supports persistent, authorized resolution transitions and notification records. Do not claim dedicated student validation/reopen controls unless shown from the live API.
 
 Show:
 
