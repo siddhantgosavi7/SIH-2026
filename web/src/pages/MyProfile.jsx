@@ -184,38 +184,187 @@ export function MyProfile() {
 
       {/* Admin Audit & Login Activity Logs Panel */}
       {session.role === 'admin' && (
-        <section className="layout" style={{ marginTop: '20px' }}>
-          <section className="panel">
-            <Activity size={22} />
-            <h2>System Audit &amp; Sign-in Activity Logs</h2>
-            <p className="helper">Tracks user sign-ins, registrations, and administrative events.</p>
-            <div className="cases" style={{ marginTop: '12px' }}>
-              {auditLogs.map((log) => (
-                <article className="case" key={log.id}>
-                  <div>
-                    <strong>{log.action} — {log.event_metadata?.email || `User #${log.actor_id || log.entity_id}`}</strong>
-                    <span>Entity: {log.entity_type} · Time: {new Date(log.created_at).toLocaleString()}</span>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+        <section
+          style={{
+            marginTop: '28px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gap: '24px',
+          }}
+        >
+          {/* Left Card: System Audit & Sign-in Activity Logs */}
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '32px',
+              border: '1px solid #E2E8F0',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Activity size={24} color="#0D9488" style={{ marginBottom: '8px', display: 'block' }} />
+            <h2
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: '#0B0B12',
+                margin: '0 0 4px 0',
+              }}
+            >
+              System Audit &amp; Sign-in Activity Logs
+            </h2>
+            <p
+              style={{
+                fontSize: '14px',
+                color: '#64748B',
+                margin: '0 0 20px 0',
+              }}
+            >
+              Tracks user sign-ins, registrations, and administrative events.
+            </p>
 
-          <section className="panel">
-            <Users size={22} />
-            <h2>Registered Users</h2>
-            <p className="helper">List of all registered accounts in the system.</p>
-            <div className="cases" style={{ marginTop: '12px' }}>
-              {usersList.map((user) => (
-                <article className="case" key={user.id}>
-                  <div>
-                    <strong>{user.email}</strong>
-                    <span>Role: {user.role} {user.department ? `· ${user.department}` : ''}</span>
-                  </div>
-                </article>
-              ))}
+            <div
+              style={{
+                maxHeight: '600px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                paddingRight: '4px',
+              }}
+            >
+              {auditLogs.length === 0 ? (
+                <p style={{ fontSize: '14px', color: '#94A3B8', fontStyle: 'italic' }}>No audit logs recorded yet.</p>
+              ) : (
+                auditLogs.map((log) => {
+                  const actorEmail =
+                    log.event_metadata?.email ||
+                    (log.event_metadata?.username ? `${log.event_metadata.username}` : `User #${log.actor_id || log.entity_id}`);
+                  const formattedTime = new Date(log.created_at).toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  });
+
+                  return (
+                    <div
+                      key={log.id}
+                      style={{
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        border: '1px solid #F1F5F9',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          color: '#0B0B12',
+                        }}
+                      >
+                        {log.action} — {actorEmail}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          color: '#64748B',
+                        }}
+                      >
+                        Entity: {log.entity_type} · Time: {formattedTime}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
             </div>
-          </section>
+          </div>
+
+          {/* Right Card: Registered Users */}
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              padding: '32px',
+              border: '1px solid #E2E8F0',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Users size={24} color="#0D9488" style={{ marginBottom: '8px', display: 'block' }} />
+            <h2
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: '#0B0B12',
+                margin: '0 0 4px 0',
+              }}
+            >
+              Registered Users
+            </h2>
+            <p
+              style={{
+                fontSize: '14px',
+                color: '#64748B',
+                margin: '0 0 20px 0',
+              }}
+            >
+              List of all registered accounts in the system.
+            </p>
+
+            <div
+              style={{
+                maxHeight: '600px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                paddingRight: '4px',
+              }}
+            >
+              {usersList.length === 0 ? (
+                <p style={{ fontSize: '14px', color: '#94A3B8', fontStyle: 'italic' }}>No registered users found.</p>
+              ) : (
+                usersList.map((user) => (
+                  <div
+                    key={user.id}
+                    style={{
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      border: '1px solid #F1F5F9',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '14px',
+                        color: '#0B0B12',
+                      }}
+                    >
+                      {user.email}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        color: '#64748B',
+                      }}
+                    >
+                      Role: {user.role} {user.username ? `· Username: @${user.username}` : ''}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </section>
       )}
     </main>

@@ -42,7 +42,7 @@ export function Login() {
         localStorage.setItem('session', JSON.stringify(data));
         setToken(data.access_token);
         setSession(data);
-        setMessage(data.role === 'admin' ? 'Signed in as Admin' : 'Signed in');
+        setMessage('Welcome back to GIOP!');
         navigate('/');
         return;
       } catch (backendErr) {
@@ -58,7 +58,7 @@ export function Login() {
           localStorage.setItem('session', JSON.stringify(sessionData));
           setToken(sessionData.access_token);
           setSession(sessionData);
-          setMessage(isAdmin ? 'Signed in as Admin (Offline)' : 'Signed in (Offline)');
+          setMessage('Welcome back to GIOP!');
           navigate('/');
           return;
         }

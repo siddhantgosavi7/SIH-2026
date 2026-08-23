@@ -69,6 +69,7 @@ export function AuthProvider({ children }) {
     setSession(null);
     setCases([]);
     setStats(null);
+    setMessage('You are logged out!');
   }
 
   const value = {
