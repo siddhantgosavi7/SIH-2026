@@ -51,6 +51,15 @@ class ComplaintTransition(BaseModel):
     note: str | None = None
 
 
+class AssignmentRequest(BaseModel):
+    user_id: int
+    note: str | None = Field(default=None, max_length=500)
+
+
+class ReopenRequest(BaseModel):
+    reason: str = Field(min_length=5, max_length=500)
+
+
 class ComplaintOut(BaseModel):
     id: str
     student_id: int
@@ -70,6 +79,7 @@ class ComplaintOut(BaseModel):
     duplicate_of_id: str | None
     created_at: datetime
     updated_at: datetime
+    deleted_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -102,3 +112,15 @@ class QueueStats(BaseModel):
     in_progress: int = 0
     escalated: int = 0
     resolved: int = 0
+
+
+class AuditEventOut(BaseModel):
+    id: int
+    actor_id: int | None
+    action: str
+    entity_type: str
+    entity_id: str
+    event_metadata: dict
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

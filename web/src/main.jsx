@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ClipboardList, LogIn, Shield, Upload, UserPlus } from 'lucide-react';
+import { ClipboardList, LogIn, Shield, Trash2, Upload, UserPlus } from 'lucide-react';
 import './styles.css';
 
 const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -70,6 +70,13 @@ function App() {
 
   async function transition(id, status) {
     await api(`/complaints/${id}/transition`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    load();
+  }
+
+  async function deleteComplaint(id) {
+    if (!confirm('Are you sure you want to delete this complaint? It will be removed from your view but the history will be preserved.')) return;
+    await api(`/complaints/${id}`, { method: 'DELETE' });
+    setMessage('Complaint deleted');
     load();
   }
 
@@ -171,12 +178,15 @@ function App() {
                   <strong>{item.title}</strong>
                   <span>{item.department} · {item.priority} · {item.status}</span>
                 </div>
-                {session.role !== 'student' && item.status !== 'closed' && (
-                  <div className="actions">
-                    <button title="Start work" onClick={() => transition(item.id, 'in_progress')}><UserPlus size={16} /></button>
-                    <button title="Resolve" onClick={() => transition(item.id, 'resolved')}><Upload size={16} /></button>
-                  </div>
-                )}
+                <div className="actions">
+                  {session.role !== 'student' && item.status !== 'closed' && (
+                    <>
+                      <button title="Start work" onClick={() => transition(item.id, 'in_progress')}><UserPlus size={16} /></button>
+                      <button title="Resolve" onClick={() => transition(item.id, 'resolved')}><Upload size={16} /></button>
+                    </>
+                  )}
+                  <button className="btn-delete" title="Delete complaint" onClick={() => deleteComplaint(item.id)}><Trash2 size={16} /></button>
+                </div>
               </article>
             ))}
           </div>

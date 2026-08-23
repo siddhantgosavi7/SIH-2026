@@ -14,17 +14,20 @@ from app.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
 from app.intelligence import analyze_complaint
 from app.logging_config import configure_logging
-from app.models import Attachment, Complaint, ComplaintStatus, Notification, Role, User
+from app.models import Attachment, AuditLog, Complaint, ComplaintStatus, Notification, Role, User, utcnow
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
 from app.schemas import (
     AttachmentOut,
+    AssignmentRequest,
+    AuditEventOut,
     ComplaintCreate,
     ComplaintOut,
     ComplaintTransition,
     LoginIn,
     NotificationOut,
     QueueStats,
+    ReopenRequest,
     StudentRegister,
     TokenOut,
     UserCreate,
@@ -112,8 +115,8 @@ def register_student(payload: StudentRegister, db: Session = Depends(get_db)) ->
 @app.post("/users", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def create_user(payload: UserCreate, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
     require_role(current, Role.admin)
-    if payload.role == Role.staff and not payload.department:
-        raise HTTPException(status_code=400, detail="staff must have department")
+    if payload.role in {Role.staff, Role.department_head} and not payload.department:
+        raise HTTPException(status_code=400, detail="department staff and heads must have a department")
     existing = db.query(User).filter(func.lower(User.email) == payload.email.lower()).one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="email already exists")
@@ -169,10 +172,10 @@ async def create_complaint(
 
 @app.get("/complaints", response_model=list[ComplaintOut])
 def list_complaints(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[Complaint]:
-    query = db.query(Complaint).order_by(Complaint.created_at.desc())
+    query = db.query(Complaint).filter(Complaint.deleted_at.is_(None)).order_by(Complaint.created_at.desc())
     if current.role == Role.student.value:
         query = query.filter(Complaint.student_id == current.id)
-    elif current.role == Role.staff.value:
+    elif current.role in {Role.staff.value, Role.department_head.value}:
         query = query.filter(Complaint.department == current.department)
     return query.all()
 
@@ -193,7 +196,7 @@ def transition_complaint(
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Complaint:
-    require_role(current, Role.staff, Role.admin)
+    require_role(current, Role.staff, Role.department_head, Role.admin)
     complaint = db.get(Complaint, complaint_id)
     if not complaint:
         raise HTTPException(status_code=404, detail="complaint not found")
@@ -206,6 +209,65 @@ def transition_complaint(
     db.commit()
     db.refresh(complaint)
     return complaint
+
+
+@app.post("/complaints/{complaint_id}/assign", response_model=ComplaintOut)
+def assign_complaint(complaint_id: str, payload: AssignmentRequest, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Complaint:
+    require_role(current, Role.staff, Role.department_head, Role.admin)
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    assignee = db.get(User, payload.user_id)
+    if not assignee or assignee.role not in {Role.staff.value, Role.department_head.value} or assignee.department != complaint.department:
+        raise HTTPException(status_code=400, detail="assignee must be staff in the complaint department")
+    complaint.assigned_to_id = assignee.id
+    write_audit(db, current, "complaint.assigned", "complaint", complaint.id, {"assignee_id": assignee.id, "note": payload.note})
+    db.commit()
+    db.refresh(complaint)
+    return complaint
+
+
+@app.post("/complaints/{complaint_id}/reopen", response_model=ComplaintOut)
+def reopen_complaint(complaint_id: str, payload: ReopenRequest, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Complaint:
+    require_role(current, Role.student)
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    if complaint.status not in {ComplaintStatus.resolved.value, ComplaintStatus.closed.value}:
+        raise HTTPException(status_code=409, detail="only resolved complaints can be reopened")
+    complaint.status = ComplaintStatus.in_progress.value
+    write_audit(db, current, "complaint.reopened", "complaint", complaint.id, {"reason": payload.reason})
+    db.commit()
+    db.refresh(complaint)
+    return complaint
+
+
+@app.get("/complaints/{complaint_id}/timeline", response_model=list[AuditEventOut])
+def complaint_timeline(complaint_id: str, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[AuditLog]:
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    return db.query(AuditLog).filter_by(entity_type="complaint", entity_id=complaint_id).order_by(AuditLog.created_at).all()
+
+
+@app.delete("/complaints/{complaint_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_complaint(
+    complaint_id: str,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    if complaint.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="complaint already deleted")
+    complaint.deleted_at = utcnow()
+    write_audit(db, current, "complaint.deleted", "complaint", complaint.id, {"title": complaint.title, "department": complaint.department, "status": complaint.status})
+    db.commit()
 
 
 @app.get("/complaints/{complaint_id}/attachments", response_model=list[AttachmentOut])
@@ -293,10 +355,10 @@ async def intake_pdf(
 
 @app.get("/dashboard/department", response_model=QueueStats)
 def department_dashboard(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> QueueStats:
-    require_role(current, Role.staff, Role.admin)
+    require_role(current, Role.staff, Role.department_head, Role.admin)
     department = current.department or "all"
     query = db.query(Complaint.status, func.count(Complaint.id)).group_by(Complaint.status)
-    if current.role == Role.staff.value:
+    if current.role in {Role.staff.value, Role.department_head.value}:
         query = query.filter(Complaint.department == current.department)
     stats = QueueStats(department=department)
     for status_name, count in query.all():
@@ -307,9 +369,9 @@ def department_dashboard(current: User = Depends(get_current_user), db: Session 
 
 @app.get("/notifications", response_model=list[NotificationOut])
 def list_notifications(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[Notification]:
-    require_role(current, Role.staff, Role.admin)
+    require_role(current, Role.staff, Role.department_head, Role.admin)
     query = db.query(Notification).order_by(Notification.created_at.desc())
-    if current.role == Role.staff.value:
+    if current.role in {Role.staff.value, Role.department_head.value}:
         query = query.join(Complaint, Notification.complaint_id == Complaint.id).filter(
             Complaint.department == current.department
         )

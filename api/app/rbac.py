@@ -13,7 +13,7 @@ def can_view_complaint(user: User, complaint: Complaint) -> bool:
         return True
     if user.role == Role.student.value:
         return complaint.student_id == user.id
-    if user.role == Role.staff.value:
+    if user.role in {Role.staff.value, Role.department_head.value}:
         return complaint.department == user.department
     return False
 

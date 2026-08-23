@@ -30,6 +30,7 @@ def upgrade() -> None:
     op.add_column("complaints", sa.Column("source", sa.String(length=32), nullable=False, server_default="web"))
     op.add_column("complaints", sa.Column("affected_users", sa.Integer(), nullable=False, server_default="1"))
     op.add_column("complaints", sa.Column("assigned_to_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=True))
+    op.add_column("complaints", sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True))
     op.create_index("ix_complaints_assigned_to_id", "complaints", ["assigned_to_id"])
     op.create_table(
         "complaint_relations",
@@ -53,6 +54,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("complaint_relations")
     op.drop_index("ix_complaints_assigned_to_id", table_name="complaints")
-    for column in ("assigned_to_id", "affected_users", "source", "priority_reasons", "classification_confidence", "subcategory", "category"):
+    for column in ("deleted_at", "assigned_to_id", "affected_users", "source", "priority_reasons", "classification_confidence", "subcategory", "category"):
         op.drop_column("complaints", column)
     op.drop_table("department_policies")

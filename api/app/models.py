@@ -113,6 +113,7 @@ class Complaint(Base):
     duplicate_of_id: Mapped[str | None] = mapped_column(ForeignKey("complaints.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     student: Mapped[User] = relationship(back_populates="complaints", foreign_keys=[student_id])
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="complaint")

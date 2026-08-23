@@ -199,6 +199,15 @@ textarea {
   place-items: center;
 }
 
+.btn-delete {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #b91c1c;
+}
+
 .toast {
   padding: 0 clamp(18px, 4vw, 48px) 24px;
 }
