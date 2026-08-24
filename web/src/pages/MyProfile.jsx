@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList, Shield, Trash2, Upload, UserPlus, Users, Activity,
   User as UserIcon, ChevronDown, ChevronUp, BookOpen, Pencil, Save, X,
+  Eye, FileText, UserCheck, Clock, Calendar, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -328,6 +329,7 @@ export function MyProfile() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [studentProfiles, setStudentProfiles] = useState([]);
   const [activeTab, setActiveTab] = useState('grievances'); // 'grievances' | 'my-info'
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
   const navigate = useNavigate();
 
   function handleSignOut() {
@@ -482,7 +484,18 @@ export function MyProfile() {
               <ClipboardList size={22} />
               <h2>Submit a grievance</h2>
               <p className="helper">Describe issue clearly. Priority and routing remain subject to authorized review.</p>
-              <input name="department" placeholder="Department" required />
+              <select name="department" defaultValue="Hostel" required>
+                <option value="Hostel">Hostel</option>
+                <option value="CSE">CSE</option>
+                <option value="AIML">AIML</option>
+                <option value="CSBS">CSBS</option>
+                <option value="Mechanical">Mechanical</option>
+                <option value="Electrical">Electrical</option>
+                <option value="ENTC">ENTC</option>
+                <option value="Biotech">Biotech</option>
+                <option value="Exam Cell">Exam Cell</option>
+                <option value="Canteen">Canteen</option>
+              </select>
               <input name="title" placeholder="Title" required />
               <textarea name="description" placeholder="Describe issue" required />
               <select name="priority" defaultValue="normal">
@@ -513,12 +526,39 @@ export function MyProfile() {
             </p>
             <div className="cases">
               {cases.map((item) => (
-                <article className="case" key={item.id}>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <span>{item.department} · {item.priority} · {item.status}</span>
+                <article
+                  className="case"
+                  key={item.id}
+                  style={{ cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s' }}
+                  onClick={() => setSelectedComplaint(item)}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <strong style={{ fontSize: '15px', color: '#0f172a' }}>{item.title}</strong>
+                      <span className={`badge-status ${item.status}`}>
+                        {item.status.replace('_', ' ')}
+                      </span>
+                    </div>
+
+                    {/* Submitter Identity Badge Info */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', fontSize: '12px', color: '#475569', flexWrap: 'wrap' }}>
+                      <span>Dept: <strong>{item.department}</strong></span>
+                      <span>Priority: <strong>{item.priority}</strong></span>
+                      <span style={{ color: '#0d9488', fontWeight: 600, background: '#f0fdf4', padding: '2px 8px', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+                        👤 {item.student_name || 'Student'} (PRN: {item.student_prn || 'N/A'} · Div: {item.student_division || '—'} · Roll: {item.student_roll_no || '—'})
+                      </span>
+                    </div>
+
+                    {/* Issue Description Preview snippet */}
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px', lineHeight: '1.4' }}>
+                      {item.description ? (item.description.length > 90 ? item.description.substring(0, 90) + '...' : item.description) : 'No description'}
+                    </p>
                   </div>
-                  <div className="actions">
+
+                  <div className="actions" onClick={(e) => e.stopPropagation()}>
+                    <button className="ghost" title="View Full Details" onClick={() => setSelectedComplaint(item)}>
+                      <Eye size={16} />
+                    </button>
                     {session.role !== 'student' && item.status !== 'closed' && (
                       <>
                         <button title="Start work" onClick={() => transition(item.id, 'in_progress')}><UserPlus size={16} /></button>
@@ -536,6 +576,143 @@ export function MyProfile() {
             </div>
           </section>
         </section>
+      )}
+
+      {/* ── Complaint Detail Modal Overlay ─────────────────────────────── */}
+      {selectedComplaint && (
+        <div className="modal-overlay" onClick={() => setSelectedComplaint(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <span className={`badge-status ${selectedComplaint.status}`}>
+                    {selectedComplaint.status.replace('_', ' ')}
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
+                    Priority: {selectedComplaint.priority}
+                  </span>
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94a3b8' }}>
+                    ID: {selectedComplaint.id.substring(0, 8)}...
+                  </span>
+                </div>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                  {selectedComplaint.title}
+                </h2>
+              </div>
+              <button
+                className="ghost"
+                onClick={() => setSelectedComplaint(null)}
+                style={{ minHeight: 'auto', padding: '6px', borderRadius: '50%', color: '#64748b' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {/* Describe Issue Section */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#176b87', fontWeight: 700, fontSize: '14px' }}>
+                  <FileText size={18} />
+                  <span>Described Issue / Full Complaint Details</span>
+                </div>
+                <div className="issue-box">
+                  {selectedComplaint.description || 'No description provided.'}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px', fontSize: '12px', color: '#64748b' }}>
+                  <span>Department: <strong>{selectedComplaint.department}</strong></span>
+                  {selectedComplaint.category && <span>Category: <strong>{selectedComplaint.category}</strong></span>}
+                  {selectedComplaint.created_at && (
+                    <span>Filed: <strong>{new Date(selectedComplaint.created_at).toLocaleString()}</strong></span>
+                  )}
+                  {selectedComplaint.sla_due_at && (
+                    <span>SLA Due: <strong>{new Date(selectedComplaint.sla_due_at).toLocaleString()}</strong></span>
+                  )}
+                </div>
+              </div>
+
+              {/* Submitter Info Card (Who sent this complaint) */}
+              <div className="submitter-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0d9488', fontWeight: 700, fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                  <UserCheck size={18} />
+                  <span>Submitter Profile &amp; Academic Identity</span>
+                </div>
+                <div className="info-grid">
+                  <span className="info-label">Full Name:</span>
+                  <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                    {selectedComplaint.student_name || 'Registered Student'}
+                  </span>
+
+                  <span className="info-label">PRN Number:</span>
+                  <span>
+                    <span className="badge-prn">
+                      {selectedComplaint.student_prn || 'N/A'}
+                    </span>
+                  </span>
+
+                  <span className="info-label">Division:</span>
+                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                    {selectedComplaint.student_division || 'N/A'}
+                  </span>
+
+                  <span className="info-label">Roll No:</span>
+                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                    {selectedComplaint.student_roll_no || 'N/A'}
+                  </span>
+
+                  <span className="info-label">Department:</span>
+                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                    {selectedComplaint.student_department || selectedComplaint.department}
+                  </span>
+
+                  <span className="info-label">Year / Semester:</span>
+                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                    {selectedComplaint.student_year_semester || 'N/A'}
+                  </span>
+
+                  <span className="info-label">Contact No:</span>
+                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                    {selectedComplaint.student_contact || 'N/A'}
+                  </span>
+
+                  <span className="info-label">Email Address:</span>
+                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                    {selectedComplaint.student_email || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              {session.role !== 'student' && selectedComplaint.status !== 'closed' && (
+                <>
+                  {selectedComplaint.status === 'open' && (
+                    <button
+                      onClick={() => {
+                        transition(selectedComplaint.id, 'in_progress');
+                        setSelectedComplaint(null);
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#2563eb' }}
+                    >
+                      <UserPlus size={16} /> Start Resolution
+                    </button>
+                  )}
+                  {selectedComplaint.status === 'in_progress' && (
+                    <button
+                      onClick={() => {
+                        transition(selectedComplaint.id, 'resolved');
+                        setSelectedComplaint(null);
+                      }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#059669' }}
+                    >
+                      <Upload size={16} /> Mark Resolved
+                    </button>
+                  )}
+                </>
+              )}
+              <button className="ghost" onClick={() => setSelectedComplaint(null)}>Close</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Admin Panel ─────────────────────────────────────────────────── */}

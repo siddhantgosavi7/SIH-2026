@@ -137,6 +137,39 @@ class Complaint(Base):
     student: Mapped[User] = relationship(back_populates="complaints", foreign_keys=[student_id])
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="complaint")
 
+    @property
+    def student_name(self) -> str | None:
+        if self.student and self.student.student_profile and self.student.student_profile.full_name:
+            return self.student.student_profile.full_name
+        if self.student:
+            return self.student.username or self.student.email
+        return None
+
+    @property
+    def student_email(self) -> str | None:
+        return self.student.email if self.student else None
+
+    @property
+    def student_prn(self) -> str | None:
+        return self.student.student_profile.prn_number if (self.student and self.student.student_profile) else None
+
+    @property
+    def student_division(self) -> str | None:
+        return self.student.student_profile.division if (self.student and self.student.student_profile) else None
+
+    @property
+    def student_roll_no(self) -> str | None:
+        return self.student.student_profile.roll_no if (self.student and self.student.student_profile) else None
+
+    @property
+    def student_year_semester(self) -> str | None:
+        return self.student.student_profile.year_semester if (self.student and self.student.student_profile) else None
+
+    @property
+    def student_contact(self) -> str | None:
+        return self.student.student_profile.contact_number if (self.student and self.student.student_profile) else None
+
+
 
 class ComplaintRelation(Base):
     __tablename__ = "complaint_relations"

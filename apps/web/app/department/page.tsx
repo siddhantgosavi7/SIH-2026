@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Bell, RefreshCw, AlertTriangle, LogOut, CheckCircle2, Clock, PlayCircle, CheckCircle } from "lucide-react";
+import { Shield, Bell, RefreshCw, AlertTriangle, LogOut, CheckCircle2, Clock, PlayCircle, CheckCircle, UserCheck, Eye, FileText, X, User as UserIcon } from "lucide-react";
 
 interface QueueStats {
   department: string;
@@ -23,6 +23,13 @@ interface Complaint {
   priority: string;
   sla_due_at: string;
   created_at: string;
+  student_name?: string | null;
+  student_email?: string | null;
+  student_prn?: string | null;
+  student_division?: string | null;
+  student_roll_no?: string | null;
+  student_year_semester?: string | null;
+  student_contact?: string | null;
 }
 
 interface NotificationItem {
@@ -42,6 +49,7 @@ export default function DepartmentDashboard() {
   const [stats, setStats] = useState<QueueStats | null>(null);
   const [queue, setQueue] = useState<Complaint[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -285,7 +293,10 @@ export default function DepartmentDashboard() {
                     }`}
                   >
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                      <div className="space-y-2 flex-1">
+                      <div
+                        className="space-y-2 flex-1 cursor-pointer"
+                        onClick={() => setSelectedComplaint(item)}
+                      >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-mono text-xs font-bold text-slate-500">{item.id.substring(0, 8)}...</span>
                           <span
@@ -314,17 +325,39 @@ export default function DepartmentDashboard() {
                           )}
                         </div>
 
-                        <h3 className="font-bold text-slate-900 text-base">{item.title}</h3>
-                        <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
-                        <div className="text-[11px] text-slate-400 pt-1 flex items-center gap-3">
-                          <span>Student ID: #{item.student_id}</span>
-                          <span>Category: {item.category}</span>
-                          <span>Filed: {new Date(item.created_at).toLocaleDateString()}</span>
+                        <h3 className="font-bold text-slate-900 text-base flex items-center justify-between gap-2 hover:text-blue-600 transition">
+                          <span>{item.title}</span>
+                          <span className="text-xs font-medium text-blue-600 underline flex items-center gap-1">
+                            <Eye className="w-3.5 h-3.5" /> View Details
+                          </span>
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{item.description}</p>
+                        
+                        {/* Submitter Academic Identity Badge */}
+                        <div className="pt-1 flex flex-wrap items-center gap-2 text-xs">
+                          <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium rounded-lg flex items-center gap-1.5">
+                            <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <strong>{item.student_name || `Student #${item.student_id}`}</strong>
+                            <span className="font-mono text-emerald-900 font-bold bg-emerald-100/80 px-1.5 py-0.5 rounded">
+                              PRN: {item.student_prn || "N/A"}
+                            </span>
+                            <span>· Div: {item.student_division || "—"}</span>
+                            <span>· Roll: {item.student_roll_no || "—"}</span>
+                          </span>
+                          <span className="text-slate-400 text-[11px]">Category: {item.category}</span>
+                          <span className="text-slate-400 text-[11px]">Filed: {new Date(item.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
 
                       {/* Status Action Buttons */}
                       <div className="flex items-center gap-2 self-start md:self-center">
+                        <button
+                          onClick={() => setSelectedComplaint(item)}
+                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1 transition"
+                          title="View Full Details"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Details
+                        </button>
                         {item.status === "open" && (
                           <button
                             onClick={() => handleTransition(item.id, "in_progress")}
@@ -354,6 +387,166 @@ export default function DepartmentDashboard() {
             </div>
           )}
         </section>
+
+        {/* Complaint Detail & Submitter Profile Modal Overlay */}
+        {selectedComplaint && (
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setSelectedComplaint(null)}
+          >
+            <div
+              className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto flex flex-col animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/50 rounded-t-2xl">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+                        selectedComplaint.status === "open"
+                          ? "bg-amber-100 text-amber-800"
+                          : selectedComplaint.status === "in_progress"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}
+                    >
+                      {selectedComplaint.status.replace("_", " ")}
+                    </span>
+                    <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-md">
+                      Priority: {selectedComplaint.priority}
+                    </span>
+                    <span className="font-mono text-xs text-slate-400">
+                      ID: {selectedComplaint.id}
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-extrabold text-slate-900">{selectedComplaint.title}</h2>
+                </div>
+                <button
+                  onClick={() => setSelectedComplaint(null)}
+                  className="p-1.5 rounded-full hover:bg-slate-200 text-slate-500 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-6">
+                {/* Issue Description Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span>Described Issue / Full Details</span>
+                  </div>
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm leading-relaxed whitespace-pre-wrap">
+                    {selectedComplaint.description || "No description provided."}
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs text-slate-500 pt-1">
+                    <span>Department: <strong className="text-slate-700">{selectedComplaint.department}</strong></span>
+                    <span>Category: <strong className="text-slate-700">{selectedComplaint.category}</strong></span>
+                    {selectedComplaint.created_at && (
+                      <span>Filed: <strong className="text-slate-700">{new Date(selectedComplaint.created_at).toLocaleString()}</strong></span>
+                    )}
+                    {selectedComplaint.sla_due_at && (
+                      <span>SLA Due: <strong className="text-slate-700">{new Date(selectedComplaint.sla_due_at).toLocaleString()}</strong></span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Submitter Academic Profile Card */}
+                <div className="p-5 bg-blue-50/40 border border-blue-200/80 rounded-xl space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-extrabold text-blue-950 pb-2 border-b border-blue-200/60">
+                    <UserCheck className="w-4 h-4 text-blue-600" />
+                    <span>Submitter Profile &amp; Academic Identity</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-500 block">Full Name</span>
+                      <span className="font-bold text-slate-900 text-sm">
+                        {selectedComplaint.student_name || `Student #${selectedComplaint.student_id}`}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-500 block">PRN Number</span>
+                      <span className="inline-block font-mono font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded border border-blue-200 text-sm">
+                        {selectedComplaint.student_prn || "N/A"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-500 block">Division</span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedComplaint.student_division || "N/A"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-500 block">Roll No</span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedComplaint.student_roll_no || "N/A"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-500 block">Academic Department</span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedComplaint.student_year_semester ? `${selectedComplaint.department} (${selectedComplaint.student_year_semester})` : selectedComplaint.department}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-500 block">Contact Number</span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedComplaint.student_contact || "N/A"}
+                      </span>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <span className="text-slate-500 block">Email Address</span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedComplaint.student_email || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 rounded-b-2xl flex items-center justify-end gap-3">
+                {selectedComplaint.status === "open" && (
+                  <button
+                    onClick={() => {
+                      handleTransition(selectedComplaint.id, "in_progress");
+                      setSelectedComplaint(null);
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition"
+                  >
+                    <PlayCircle className="w-4 h-4" /> Start Resolution
+                  </button>
+                )}
+                {selectedComplaint.status === "in_progress" && (
+                  <button
+                    onClick={() => {
+                      handleTransition(selectedComplaint.id, "resolved");
+                      setSelectedComplaint(null);
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm transition"
+                  >
+                    <CheckCircle className="w-4 h-4" /> Mark Resolved
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedComplaint(null)}
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

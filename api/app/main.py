@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, Uplo
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.audit import write_audit
 from app.config import settings
@@ -103,6 +103,36 @@ def bootstrap_admin(db: Session) -> None:
         db.commit()
 
 
+def bootstrap_staff(db: Session) -> None:
+    staff_accounts = [
+        ("hostel_staff", "hostel@institution.edu", "Hostel"),
+        ("cse_staff", "cse@institution.edu", "CSE"),
+        ("aiml_staff", "aiml@institution.edu", "AIML"),
+        ("csbs_staff", "csbs@institution.edu", "CSBS"),
+        ("mech_staff", "mech@institution.edu", "Mechanical"),
+        ("elec_staff", "elec@institution.edu", "Electrical"),
+        ("entc_staff", "entc@institution.edu", "ENTC"),
+        ("biotech_staff", "biotech@institution.edu", "Biotech"),
+        ("exam_staff", "exam@institution.edu", "Exam Cell"),
+        ("canteen_staff", "canteen@institution.edu", "Canteen"),
+    ]
+    for username, email, dept in staff_accounts:
+        existing = db.query(User).filter(
+            (func.lower(User.username) == username) | (func.lower(User.email) == email)
+        ).first()
+        if not existing:
+            db.add(
+                User(
+                    email=email,
+                    username=username,
+                    hashed_password=hash_password("staff@123"),
+                    role=Role.staff.value,
+                    department=dept,
+                )
+            )
+    db.commit()
+
+
 def bootstrap_departments(db: Session) -> None:
     for dept in DEPARTMENTS:
         existing = db.query(DepartmentPolicy).filter(DepartmentPolicy.name == dept).first()
@@ -134,6 +164,7 @@ def ready(db: Session = Depends(get_db)) -> dict:
 @app.post("/auth/login", response_model=TokenOut)
 def login(payload: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
     bootstrap_admin(db)
+    bootstrap_staff(db)
     username_input = payload.username.strip()
 
     if "@" in username_input:
@@ -367,7 +398,12 @@ def list_complaints(
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> list[Complaint]:
-    query = db.query(Complaint).filter(Complaint.deleted_at.is_(None)).order_by(Complaint.created_at.desc())
+    query = (
+        db.query(Complaint)
+        .options(joinedload(Complaint.student).joinedload(User.student_profile))
+        .filter(Complaint.deleted_at.is_(None))
+        .order_by(Complaint.created_at.desc())
+    )
     if current.role == Role.student.value:
         query = query.filter(Complaint.student_id == current.id)
     elif current.role in {Role.staff.value, Role.department_head.value}:
@@ -379,7 +415,12 @@ def list_complaints(
 
 @app.get("/complaints/{complaint_id}", response_model=ComplaintOut)
 def get_complaint(complaint_id: str, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Complaint:
-    complaint = db.get(Complaint, complaint_id)
+    complaint = (
+        db.query(Complaint)
+        .options(joinedload(Complaint.student).joinedload(User.student_profile))
+        .filter(Complaint.id == complaint_id)
+        .first()
+    )
     if not complaint:
         raise HTTPException(status_code=404, detail="complaint not found")
     enforce_view_complaint(current, complaint)

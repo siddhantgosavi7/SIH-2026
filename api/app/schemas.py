@@ -91,6 +91,13 @@ class ComplaintOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+    student_name: str | None = None
+    student_email: str | None = None
+    student_prn: str | None = None
+    student_division: str | None = None
+    student_roll_no: str | None = None
+    student_year_semester: str | None = None
+    student_contact: str | None = None
 
     model_config = {"from_attributes": True}
 
