@@ -2,14 +2,19 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GIOP — Grievance Intelligence & Orchestration Platform",
-  description: "The campus grievance system that understands itself. Classify, prioritize, and route every complaint across every department.",
+  title: "Resolve — AI-Powered Grievance Intelligence",
+  description:
+    "AI-powered grievance management for faster resolution, smarter routing and accountable institutional governance.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

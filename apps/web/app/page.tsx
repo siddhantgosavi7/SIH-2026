@@ -1,654 +1,1141 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Search,
-  Send,
-  Building2,
-  GraduationCap,
-  Landmark,
-  Briefcase,
-  Library,
-  HeartPulse,
-  Wifi,
-  Trophy,
-  ShieldCheck,
-  Building,
-  ArrowRight,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-// Types
-type Category = "Hostel" | "Exam Cell" | "Academics" | "Admin" | "IT Services" | "Library";
+const navItems = ["Platform", "Intelligence", "Security", "Resources"];
 
-interface DemoResult {
-  priority: string;
-  prioritySub: string;
-  routedTo: string;
-  routedSub: string;
-  related: string;
-  relatedSub: string;
-}
+const customers = [
+  "HOSTEL",
+  "ACADEMICS",
+  "ADMINISTRATION",
+  "FINANCE",
+  "INFRASTRUCTURE",
+  "STUDENT SERVICES",
+  "EXAMINATION",
+  "TRANSPORT",
+  "LIBRARY",
+  "SECURITY",
+  "HEALTH",
+  "FACILITIES",
+];
 
-type BenchmarkTab = "Accuracy" | "Latency" | "Coverage";
+const securityCards = [
+  {
+    number: "01",
+    title: "Role-based access",
+    text: "Give every officer exactly the level of access required for their responsibilities.",
+  },
+  {
+    number: "02",
+    title: "PII protection",
+    text: "Protect sensitive complainant information throughout the complete grievance lifecycle.",
+  },
+  {
+    number: "03",
+    title: "Complete audit trail",
+    text: "Every assignment, escalation, override and resolution remains traceable.",
+  },
+  {
+    number: "04",
+    title: "Human approval",
+    text: "Keep authorized officers in control of consequential AI-assisted decisions.",
+  },
+  {
+    number: "05",
+    title: "Data governance",
+    text: "Institution-controlled policies determine access, retention and operational workflows.",
+  },
+  {
+    number: "06",
+    title: "Controlled AI",
+    text: "AI operates inside a governed institutional workflow instead of making unchecked decisions.",
+  },
+];
 
-interface ChartGroup {
-  label: string;
-  giop: number;
-  helpdesk: number;
-  manual: number;
-  suffix?: string;
-}
-
-// Data mapping for Demo Card
-const demoResultsMap: Record<Category, DemoResult> = {
-  Hostel: {
-    priority: "Priority: High",
-    prioritySub: "3 related reports · affects 40+ students",
-    routedTo: "Routed to: Hostel Administration",
-    routedSub: "Auto-assigned, SLA 24h",
-    related: "Related complaint found",
-    relatedSub: "Block A water outage, reported 6h ago",
-  },
-  "Exam Cell": {
-    priority: "Priority: Critical",
-    prioritySub: "24 related reports · affects 120+ students",
-    routedTo: "Routed to: Controller of Examinations",
-    routedSub: "High priority queue, SLA 4h",
-    related: "Related complaint found",
-    relatedSub: "Hall ticket portal download timeout, reported 1h ago",
-  },
-  Academics: {
-    priority: "Priority: Normal",
-    prioritySub: "1 related report · affects 15 students",
-    routedTo: "Routed to: Academic Affairs Committee",
-    routedSub: "Standard review queue, SLA 48h",
-    related: "Related complaint found",
-    relatedSub: "Elective course registration overlap, reported 12h ago",
-  },
-  Admin: {
-    priority: "Priority: High",
-    prioritySub: "5 related reports · affects 50+ students",
-    routedTo: "Routed to: Central Registrar Office",
-    routedSub: "Auto-routed, SLA 12h",
-    related: "Related complaint found",
-    relatedSub: "Annual fee receipt verification pending, reported 24h ago",
-  },
-  "IT Services": {
-    priority: "Priority: Urgent",
-    prioritySub: "18 related reports · affects 300+ students",
-    routedTo: "Routed to: Network Infrastructure Team",
-    routedSub: "Immediate escalation, SLA 2h",
-    related: "Related complaint found",
-    relatedSub: "East Campus Wi-Fi gateway down, reported 30m ago",
-  },
-  Library: {
-    priority: "Priority: Normal",
-    prioritySub: "2 related reports · affects 8 students",
-    routedTo: "Routed to: Library Digital Access Desk",
-    routedSub: "Standard queue, SLA 36h",
-    related: "Related complaint found",
-    relatedSub: "E-journal proxy portal authentication glitch, reported 4h ago",
-  },
-};
-
-// Data mapping for Benchmarks
-const benchmarkDataMap: Record<BenchmarkTab, ChartGroup[]> = {
-  Accuracy: [
-    { label: "Routing accuracy", giop: 95, helpdesk: 44, manual: 22, suffix: "%" },
-    { label: "Duplicate catch", giop: 88, helpdesk: 30, manual: 8, suffix: "%" },
-    { label: "SLA compliance", giop: 90, helpdesk: 52, manual: 19, suffix: "%" },
+const benchmarkData = {
+  priority: [
+    { label: "P1 · Critical", value: 94 },
+    { label: "P2 · High", value: 78 },
+    { label: "P3 · Medium", value: 56 },
+    { label: "P4 · Low", value: 31 },
   ],
-  Latency: [
-    { label: "Triage speed", giop: 98, helpdesk: 40, manual: 15, suffix: "%" },
-    { label: "First response", giop: 92, helpdesk: 35, manual: 12, suffix: "%" },
-    { label: "Resolution speed", giop: 85, helpdesk: 45, manual: 20, suffix: "%" },
+  impact: [
+    { label: "High impact", value: 89 },
+    { label: "Moderate impact", value: 63 },
+    { label: "Low impact", value: 37 },
+    { label: "Individual", value: 22 },
   ],
-  Coverage: [
-    { label: "Dept coverage", giop: 100, helpdesk: 60, manual: 35, suffix: "%" },
-    { label: "Intake channels", giop: 94, helpdesk: 50, manual: 25, suffix: "%" },
-    { label: "Audit compliance", giop: 99, helpdesk: 65, manual: 40, suffix: "%" },
+  sla: [
+    { label: "Critical risk", value: 91 },
+    { label: "Approaching", value: 73 },
+    { label: "On track", value: 44 },
+    { label: "Resolved", value: 19 },
   ],
 };
 
-export default function GIOPPage() {
-  const [selectedCategory, setSelectedCategory] = useState<Category>("Hostel");
-  const [activeBenchmarkTab, setActiveBenchmarkTab] = useState<BenchmarkTab>("Accuracy");
+function Arrow() {
+  return <span className="arrow">↗</span>;
+}
 
-  const currentDemo = demoResultsMap[selectedCategory];
-  const currentChartGroups = benchmarkDataMap[activeBenchmarkTab];
+function Reveal({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.08 }
+    );
+
+    const element = document.querySelector(`[data-reveal="${className}"]`);
+
+    if (element) observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [className]);
 
   return (
-    <div className="min-h-screen bg-white text-[#0B0B12] font-sans antialiased selection:bg-[#3D4FFF] selection:text-white">
-      {/* 1. STICKY NAVBAR */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-black/10 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          {/* Left: Logo mark + Wordmark */}
-          <a
-            href="#"
-            className="flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF] rounded-lg p-1"
-          >
-            <div className="w-6 h-6 rounded-md bg-[#3D4FFF] flex items-center justify-center text-white font-bold text-xs shadow-sm">
-              G
-            </div>
-            <span className="font-extrabold text-xl tracking-tight text-[#0B0B12]">
-              GIOP
-            </span>
+    <div
+      data-reveal={className}
+      className={`reveal ${visible ? "visible" : ""} ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+export default function Home() {
+  const [activeTab, setActiveTab] =
+    useState<keyof typeof benchmarkData>("priority");
+
+  const [query, setQuery] = useState(
+    "Hostel Block A has had no water supply for three days."
+  );
+
+  const [analyzed, setAnalyzed] = useState(false);
+
+  const [mobileMenu, setMobileMenu] = useState(false);
+
+  const bars = benchmarkData[activeTab];
+
+  return (
+    <main className="site">
+      {/* NAVIGATION */}
+
+      <header className="navbar">
+        <a href="#" className="brand">
+          <span className="brand-mark">
+            <span />
+            <span />
+            <span />
+          </span>
+
+          <span>Resolve</span>
+        </a>
+
+        <nav className={`nav-links ${mobileMenu ? "mobile-open" : ""}`}>
+          {navItems.map((item) => (
+            <a
+              href={`#${item.toLowerCase()}`}
+              key={item}
+              onClick={() => setMobileMenu(false)}
+            >
+              {item}
+            </a>
+          ))}
+
+          <a href="#demo" className="nav-mobile-cta">
+            Request a demo <Arrow />
+          </a>
+        </nav>
+
+        <div className="nav-actions">
+          <a href="#demo" className="nav-demo">
+            Request a demo <Arrow />
           </a>
 
-          {/* Center: Nav links (Hidden on mobile) */}
-          <div className="hidden md:flex items-center gap-7">
-            {["Product", "Departments", "Enterprise", "Blog", "Docs", "Pricing"].map((link) => (
-              <a
-                key={link}
-                href="#"
-                className="text-sm font-medium text-[#3D4FFF] hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF] rounded-md px-1 transition-all"
-              >
-                {link}
-              </a>
-            ))}
-          </div>
-
-          {/* Right: Actions */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="px-4 py-2 bg-[#F1F0EC] hover:bg-gray-200 text-[#0B0B12] text-xs sm:text-sm font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
-            >
-              Contact admin
-            </button>
-            <a
-              href="/login"
-              className="px-4 py-2 bg-[#3D4FFF] hover:bg-blue-600 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
-            >
-              Login
-            </a>
-            <a
-              href="/signup"
-              className="px-4 py-2 bg-[#0B0B12] hover:bg-black/80 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
-            >
-              Sign up
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      {/* 2. HERO SECTION */}
-      <section className="relative max-w-6xl mx-auto px-4 pt-16 sm:pt-24 pb-16 text-center">
-        {/* Decorative Floating Shapes & Cards (Desktop Only) */}
-        <div className="hidden lg:block pointer-events-none select-none">
-          {/* Top Left: Solid Blue Square */}
-          <div
-            className="absolute -left-12 top-10 w-20 h-20 bg-[#3D4FFF] rounded-2xl animate-float shadow-md"
-            style={{ animationDelay: "0s" }}
-          />
-          {/* Below Top Left: Solid Dark Square */}
-          <div
-            className="absolute -left-16 top-36 w-16 h-16 bg-[#0B0B12] rounded-xl animate-float shadow-md"
-            style={{ animationDelay: "1.8s" }}
-          />
-          {/* Mid Left: Gradient Blue-Lavender Rectangle */}
-          <div
-            className="absolute -left-8 top-64 w-20 h-28 bg-gradient-to-b from-[#3D4FFF] to-[#8B98FF] rounded-2xl animate-float shadow-lg"
-            style={{ animationDelay: "3.5s" }}
-          />
-          {/* Bottom Left: Terracotta Gradient Square */}
-          <div
-            className="absolute -left-16 top-96 w-16 h-16 bg-gradient-to-br from-[#E2935A] to-[#B97A5C] rounded-2xl animate-float shadow-md"
-            style={{ animationDelay: "2.2s" }}
-          />
-
-          {/* Floating Data Card 1: Priority Card (Top Left) */}
-          <div
-            className="absolute left-10 top-4 bg-white border border-black/10 rounded-xl p-3.5 shadow-xl w-32 text-left animate-float"
-            style={{ animationDelay: "1s" }}
-          >
-            <div className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-              Priority
-            </div>
-            <div className="text-sm font-extrabold text-[#0B0B12] mt-0.5">
-              High
-            </div>
-          </div>
-
-          {/* Floating Data Card 2: JSON Code Card (Top Right) */}
-          <div
-            className="absolute right-12 top-28 bg-[#0B0B12] text-white border border-white/10 rounded-xl p-3.5 shadow-2xl w-40 text-left font-mono text-[11px] leading-relaxed animate-float"
-            style={{ animationDelay: "2.5s" }}
-          >
-            <div>
-              <span className="text-gray-400">route: </span>
-              <span className="text-amber-300">&quot;hostel&quot;</span>
-            </div>
-            <div>
-              <span className="text-gray-400">sla: </span>
-              <span className="text-[#1E8A54] font-bold">24h</span>
-            </div>
-            <div>
-              <span className="text-gray-400">status: </span>
-              <span className="text-[#1E8A54] font-bold">open</span>
-            </div>
-          </div>
-
-          {/* Top Right: Gradient Blue Square */}
-          <div
-            className="absolute -right-12 top-8 w-20 h-20 bg-gradient-to-b from-[#8B98FF] to-[#3D4FFF] rounded-2xl animate-float shadow-md"
-            style={{ animationDelay: "0.8s" }}
-          />
-          {/* Mid Right: Solid Blue Rect */}
-          <div
-            className="absolute -right-10 top-56 w-16 h-24 bg-[#3D4FFF] rounded-2xl animate-float shadow-lg"
-            style={{ animationDelay: "4s" }}
-          />
-          {/* Mid-low Right: Solid Dark Square */}
-          <div
-            className="absolute -right-16 top-84 w-16 h-16 bg-[#0B0B12] rounded-xl animate-float shadow-md"
-            style={{ animationDelay: "1.2s" }}
-          />
-          {/* Bottom Right: Terracotta Square */}
-          <div
-            className="absolute -right-12 top-112 w-16 h-16 bg-gradient-to-br from-[#E2935A] to-[#B97A5C] rounded-2xl animate-float shadow-md"
-            style={{ animationDelay: "3s" }}
-          />
-        </div>
-
-        {/* Hero Text Column */}
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-[#0B0B12] tracking-tighter leading-[1.05] max-w-4xl mx-auto">
-          The campus grievance system that understands itself.
-        </h1>
-        <p className="mt-6 text-base sm:text-xl text-[#8B8B9A] max-w-2xl mx-auto font-medium leading-relaxed">
-          Classify, prioritize, and route every complaint across every department.
-        </p>
-
-        <div className="mt-8">
           <button
-            type="button"
-            className="inline-flex items-center justify-center px-7 py-3.5 bg-[#0B0B12] hover:bg-black/80 text-white text-sm font-bold rounded-full transition-colors shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF] focus-visible:ring-offset-2"
+            className="menu-button"
+            onClick={() => setMobileMenu(!mobileMenu)}
+            aria-label="Toggle menu"
           >
-            Try the dashboard
+            <span />
+            <span />
           </button>
         </div>
-      </section>
+      </header>
 
-      {/* 3. INTERACTIVE DEMO CARD */}
-      <section className="max-w-4xl mx-auto px-4 mb-24 relative z-20">
-        <div className="bg-white rounded-2xl shadow-xl border border-black/10 p-6 sm:p-8 text-left transition-all">
-          {/* Top row */}
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs sm:text-sm font-medium text-gray-500">
-              Hostel water supply — Block A
-            </span>
-            <span className="bg-[#EAF7F0] text-[#1E8A54] text-xs font-semibold px-3 py-1 rounded-full border border-[#1E8A54]/20 flex items-center gap-1.5">
-              confidence 96%
-            </span>
-          </div>
+      {/* HERO */}
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/15 text-xs font-bold text-[#0B0B12] hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
-            >
-              <Search className="w-3.5 h-3.5 text-[#0B0B12]" />
-              Classify
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-black/15 text-xs font-bold text-[#0B0B12] hover:bg-black/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
-            >
-              <Send className="w-3.5 h-3.5 text-[#0B0B12]" />
-              Route
-            </button>
-          </div>
+      <section className="hero">
+        <div className="hero-grid" />
 
-          {/* Two-Column Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 mt-6 pt-6 border-t border-black/5">
-            {/* Left Column: CATEGORY List */}
-            <div>
-              <div className="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-3">
-                CATEGORY
+        <div className="hero-content">
+          <Reveal className="hero-copy">
+            <div className="eyebrow">
+              <span className="eyebrow-dot" />
+              AI-POWERED GRIEVANCE INTELLIGENCE
+            </div>
+
+            <h1>
+              Turn every complaint
+              <br />
+              into <em>actionable intelligence.</em>
+            </h1>
+
+            <p className="hero-description">
+              Understand what is happening across your institution, prioritize
+              what matters most, and move every grievance toward resolution.
+            </p>
+
+            <div className="hero-buttons">
+          <Link href="/login" className="text-[#3D4FFF] font-bold hover:underline">
+            Log in
+          </Link>
+
+         <Link href="/signup" className="text-[#3D4FFF] font-bold hover:underline">
+            Sign up
+          </Link>
+            </div>
+          </Reveal>
+
+          <Reveal className="hero-console-wrap">
+            <div className="hero-console">
+              <div className="console-top">
+                <div className="console-title">
+                  <span className="live-dot" />
+                  Complaint Intelligence
+                </div>
+
+                <span className="console-status">LIVE ANALYSIS</span>
               </div>
-              <div className="flex flex-col gap-1">
-                {(
-                  [
-                    "Hostel",
-                    "Exam Cell",
-                    "Academics",
-                    "Admin",
-                    "IT Services",
-                    "Library",
-                  ] as Category[]
-                ).map((cat) => {
-                  const isSelected = selectedCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF] ${
-                        isSelected
-                          ? "bg-[#0B0B12] text-white shadow-sm"
-                          : "text-gray-500 hover:text-[#0B0B12] hover:bg-gray-100"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
+
+              <div className="console-body">
+                <div className="console-input">
+                  <textarea
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    aria-label="Complaint"
+                  />
+
+                  <button
+                    onClick={() => setAnalyzed(true)}
+                    className="analyze-button"
+                  >
+                    Analyze <Arrow />
+                  </button>
+                </div>
+
+                <div className="analysis">
+                  <div className="analysis-heading">
+                    <span>AI ANALYSIS</span>
+                    <span className="confidence">
+                      {analyzed ? "98.4% CONFIDENCE" : "READY"}
+                    </span>
+                  </div>
+
+                  <div className="analysis-grid">
+                    <div>
+                      <small>Category</small>
+                      <strong>Infrastructure</strong>
+                    </div>
+
+                    <div>
+                      <small>Department</small>
+                      <strong>Estate / Maintenance</strong>
+                    </div>
+
+                    <div>
+                      <small>Urgency</small>
+                      <strong className="danger">HIGH</strong>
+                    </div>
+
+                    <div>
+                      <small>Impact</small>
+                      <strong>126 students</strong>
+                    </div>
+
+                    <div>
+                      <small>Sentiment</small>
+                      <strong>Distressed</strong>
+                    </div>
+
+                    <div>
+                      <small>Duplicate cluster</small>
+                      <strong>47 related</strong>
+                    </div>
+                  </div>
+
+                  <div className="priority-result">
+                    <div>
+                      <small>PRIORITY</small>
+                      <strong>P1</strong>
+                    </div>
+
+                    <div className="priority-reasons">
+                      <span>3-day disruption</span>
+                      <span>High student impact</span>
+                      <span>Repeated complaints</span>
+                      <span>SLA approaching</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Right Column: RESULT Panel */}
-            <div>
-              <div className="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-3">
-                RESULT
-              </div>
-              <div className="divide-y divide-black/5 rounded-xl bg-gray-50/50 p-4 border border-black/5">
-                {/* Result Item 1 */}
-                <div className="pb-3.5">
-                  <div className="font-extrabold text-sm text-[#0B0B12]">
-                    {currentDemo.priority}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {currentDemo.prioritySub}
-                  </div>
+            <div className="floating-card floating-one">
+              <span>MASTER INCIDENT</span>
+              <strong>#1042</strong>
+              <small>47 complaints connected</small>
+            </div>
+
+            <div className="floating-card floating-two">
+              <span>SLA RISK</span>
+              <strong>89%</strong>
+              <small>Escalation approaching</small>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* PLATFORM */}
+
+      <section className="section platform" id="platform">
+        <Reveal className="section-heading">
+          <div>
+            <span className="section-kicker">ONE INTELLIGENCE LAYER</span>
+
+            <h2>
+              Every way a complaint
+              <br />
+              reaches you.
+            </h2>
+          </div>
+
+          <div className="section-heading-right">
+            <p>
+              From online complaints and official email to PDFs, scanned
+              letters and structured forms, bring every grievance into one
+              intelligent workflow.
+            </p>
+
+            <a href="#demo" className="arrow-link">
+              Explore the platform <Arrow />
+            </a>
+          </div>
+        </Reveal>
+
+        <Reveal className="intake-grid">
+          <article className="intake-card large">
+            <div className="card-number">01</div>
+
+            <div className="card-visual portal-visual">
+              <div className="portal-window">
+                <div className="portal-header">
+                  <span />
+                  <span />
+                  <span />
                 </div>
 
-                {/* Result Item 2 */}
-                <div className="py-3.5">
-                  <div className="font-extrabold text-sm text-[#0B0B12]">
-                    {currentDemo.routedTo}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {currentDemo.routedSub}
-                  </div>
-                </div>
-
-                {/* Result Item 3 */}
-                <div className="pt-3.5">
-                  <div className="font-extrabold text-sm text-[#0B0B12]">
-                    {currentDemo.related}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {currentDemo.relatedSub}
-                  </div>
+                <div className="portal-lines">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* 4. DEPARTMENTS SECTION */}
-      <section className="max-w-6xl mx-auto px-4 mb-24 text-left">
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-[#0B0B12] tracking-tight">
-          Built to run across every department on campus.
-        </h2>
-        <div className="mt-3">
-          <a
-            href="#"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#F1F0EC] hover:bg-gray-200 text-[#0B0B12] text-xs font-semibold rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF]"
-          >
-            See how routing works <ArrowRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-
-        {/* 5 columns x 2 rows Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 border border-black/10 rounded-2xl overflow-hidden bg-white shadow-sm mt-8 divide-x divide-y divide-black/10">
-          {[
-            { name: "Hostel Admin", icon: Building2 },
-            { name: "Academics / HOD", icon: GraduationCap },
-            { name: "Exam Cell", icon: Landmark },
-            { name: "Placement Cell", icon: Briefcase },
-            { name: "Library", icon: Library },
-            { name: "Health Center", icon: HeartPulse },
-            { name: "IT Services", icon: Wifi },
-            { name: "Sports Dept", icon: Trophy },
-            { name: "Security", icon: ShieldCheck },
-            { name: "Admin Office", icon: Building },
-          ].map((dept) => {
-            const Icon = dept.icon;
-            return (
-              <div
-                key={dept.name}
-                className="p-6 text-center flex flex-col items-center justify-center gap-3 hover:bg-gray-50 transition-colors"
-              >
-                <Icon className="w-6 h-6 text-[#0B0B12]" />
-                <span className="text-xs font-bold text-[#0B0B12]">
-                  {dept.name}
-                </span>
+            <div className="intake-card-bottom">
+              <div>
+                <h3>Student portal</h3>
+                <p>Submit and track complaints directly.</p>
               </div>
-            );
-          })}
-        </div>
+
+              <Arrow />
+            </div>
+          </article>
+
+          <article className="intake-card">
+            <div className="card-number">02</div>
+
+            <div className="mini-icon email-icon">
+              <span />
+            </div>
+
+            <h3>Official email</h3>
+            <p>
+              Automatically extract, classify and route incoming grievances.
+            </p>
+
+            <Arrow />
+          </article>
+
+          <article className="intake-card">
+            <div className="card-number">03</div>
+
+            <div className="mini-icon document-icon">
+              <span />
+              <span />
+              <span />
+            </div>
+
+            <h3>PDF & documents</h3>
+            <p>
+              Extract complaint information from structured and unstructured
+              documents.
+            </p>
+
+            <Arrow />
+          </article>
+
+          <article className="intake-card">
+            <div className="card-number">04</div>
+
+            <div className="mini-icon scan-icon">
+              <span />
+            </div>
+
+            <h3>Scanned letters</h3>
+            <p>
+              OCR converts physical submissions into actionable digital cases.
+            </p>
+
+            <Arrow />
+          </article>
+        </Reveal>
       </section>
 
-      {/* 5. BENCHMARKS SECTION (Full width, no page padding) */}
-      <section className="w-full grid grid-cols-1 lg:grid-cols-2">
-        {/* Left Panel */}
-        <div className="bg-[#0B0B12] text-white p-8 sm:p-12 lg:p-20 flex flex-col justify-center text-left">
-          <div className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-4">
-            BENCHMARKS
-          </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight mb-4">
-            Faster resolution at every SLA tier
+      {/* INCIDENT ENGINE */}
+
+      <section className="section incident-section">
+        <Reveal className="split-heading">
+          <span className="section-kicker">INCIDENT INTELLIGENCE</span>
+
+          <h2>
+            Don't just count complaints.
+            <br />
+            <em>Understand the incident.</em>
           </h2>
-          <p className="text-sm sm:text-base text-gray-400 mb-8 max-w-md">
-            Illustrative pilot targets against the tools most departments run on today.
+
+          <p>
+            Multiple people can report the same underlying problem. Resolve
+            connects semantically similar complaints and creates a Master
+            Incident—giving administrators a real picture of institutional
+            impact.
+          </p>
+        </Reveal>
+
+        <Reveal className="incident-visual">
+          <div className="complaint-stack">
+            <div className="complaint-card">
+              <span>COMPLAINT #821</span>
+              <p>Water unavailable in Hostel Block A.</p>
+              <small>Student · 09:12</small>
+            </div>
+
+            <div className="complaint-card">
+              <span>COMPLAINT #834</span>
+              <p>No water supply since yesterday evening.</p>
+              <small>Student · 11:48</small>
+            </div>
+
+            <div className="complaint-card">
+              <span>COMPLAINT #856</span>
+              <p>Hostel Block A water problem continues.</p>
+              <small>Student · 14:06</small>
+            </div>
+          </div>
+
+          <div className="connection-line">
+            <span />
+            <span />
+            <span />
+          </div>
+
+          <div className="master-incident">
+            <div className="master-top">
+              <span>MASTER INCIDENT</span>
+              <span>#1042</span>
+            </div>
+
+            <div className="master-symbol">∞</div>
+
+            <h3>Hostel Block A</h3>
+            <p>Water Supply Failure</p>
+
+            <div className="master-stats">
+              <div>
+                <strong>47</strong>
+                <span>complaints</span>
+              </div>
+
+              <div>
+                <strong>126</strong>
+                <span>students affected</span>
+              </div>
+
+              <div>
+                <strong>3d</strong>
+                <span>unresolved</span>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* BENCHMARKS */}
+
+      <section className="benchmark-section" id="intelligence">
+        <div className="benchmark-left">
+          <span className="section-kicker light">PRIORITIZATION ENGINE</span>
+
+          <h2>
+            Prioritize by
+            <br />
+            <em>impact.</em>
+          </h2>
+
+          <p>
+            Every complaint gets a reason. Every priority can be explained.
+            The system continuously considers impact, recurrence, sentiment,
+            unresolved duration and SLA pressure.
           </p>
 
-          {/* Vertical Tab List */}
-          <div className="divide-y divide-white/10 border-y border-white/10">
-            {(["Accuracy", "Latency", "Coverage"] as BenchmarkTab[]).map(
-              (tab) => {
-                const isActive = activeBenchmarkTab === tab;
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveBenchmarkTab(tab)}
-                    className={`w-full text-left py-4 px-4 text-base font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D4FFF] ${
-                      isActive
-                        ? "border-l-4 border-[#3D4FFF] text-white bg-white/5 pl-4"
-                        : "text-gray-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                );
-              }
+          <div className="benchmark-tabs">
+            {(Object.keys(benchmarkData) as Array<keyof typeof benchmarkData>).map(
+              (tab) => (
+                <button
+                  key={tab}
+                  className={activeTab === tab ? "active" : ""}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab === "priority"
+                    ? "Priority"
+                    : tab === "impact"
+                    ? "Impact"
+                    : "SLA Risk"}
+                </button>
+              )
             )}
           </div>
         </div>
 
-        {/* Right Panel */}
-        <div className="bg-[#F1F0EC] p-8 sm:p-12 lg:p-20 flex items-center justify-center">
-          <div className="bg-[#0B0B12] text-white rounded-2xl p-6 sm:p-8 w-full max-w-xl shadow-2xl border border-white/10 text-left">
-            {/* Legend Row */}
-            <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-300 mb-8 border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-[#3D4FFF]" />
-                <span>GIOP</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-[#8B8B9A]" />
-                <span>Generic helpdesk</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-[#B97A5C]" />
-                <span>Manual / email</span>
-              </div>
+        <div className="benchmark-right">
+          <div className="chart-header">
+            <div>
+              <span>INSTITUTIONAL SIGNAL</span>
+              <h3>
+                {activeTab === "priority"
+                  ? "Priority distribution"
+                  : activeTab === "impact"
+                  ? "Affected population"
+                  : "SLA pressure"}
+              </h3>
             </div>
 
-            {/* Bar Chart Clusters */}
-            <div className="grid grid-cols-3 gap-4 items-end h-64">
-              {currentChartGroups.map((group) => (
-                <div
-                  key={group.label}
-                  className="flex flex-col items-center h-full justify-end"
-                >
-                  {/* Bars Container */}
-                  <div className="flex items-end gap-1.5 sm:gap-2.5 w-full justify-center h-48">
-                    {/* Bar 1: GIOP */}
-                    <div className="flex flex-col items-center flex-1 max-w-[28px] h-full justify-end">
-                      <span className="text-[10px] font-bold text-gray-300 mb-1">
-                        {group.giop}
-                        {group.suffix}
-                      </span>
-                      <div
-                        className="w-full bg-[#3D4FFF] rounded-t-sm transition-all duration-500"
-                        style={{ height: `${group.giop}%` }}
-                      />
-                    </div>
+            <div className="chart-value">+24.8%</div>
+          </div>
 
-                    {/* Bar 2: Generic Helpdesk */}
-                    <div className="flex flex-col items-center flex-1 max-w-[28px] h-full justify-end">
-                      <span className="text-[10px] font-bold text-gray-400 mb-1">
-                        {group.helpdesk}
-                        {group.suffix}
-                      </span>
-                      <div
-                        className="w-full bg-[#8B8B9A] rounded-t-sm transition-all duration-500"
-                        style={{ height: `${group.helpdesk}%` }}
-                      />
-                    </div>
+          <div className="chart">
+            {bars.map((bar, index) => (
+              <div className="chart-row" key={bar.label}>
+                <div className="chart-label">{bar.label}</div>
 
-                    {/* Bar 3: Manual / Email */}
-                    <div className="flex flex-col items-center flex-1 max-w-[28px] h-full justify-end">
-                      <span className="text-[10px] font-bold text-gray-400 mb-1">
-                        {group.manual}
-                        {group.suffix}
-                      </span>
-                      <div
-                        className="w-full bg-[#B97A5C] rounded-t-sm transition-all duration-500"
-                        style={{ height: `${group.manual}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Group Label */}
-                  <div className="text-[11px] text-gray-400 font-semibold text-center mt-3 line-clamp-1">
-                    {group.label}
-                  </div>
+                <div className="bar-track">
+                  <div
+                    className="bar"
+                    style={{
+                      width: `${bar.value}%`,
+                      transitionDelay: `${index * 80}ms`,
+                    }}
+                  />
                 </div>
-              ))}
-            </div>
+
+                <div className="bar-number">{bar.value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="chart-footer">
+            <span>AI-generated institutional signal</span>
+            <span>Live system data</span>
           </div>
         </div>
       </section>
 
-      {/* 6. CLOSING CTA + FOOTER BAND */}
-      <footer className="bg-[#3D4FFF] text-white w-full py-16 sm:py-20 px-6 sm:px-12 lg:px-20 text-left">
-        <div className="max-w-7xl mx-auto">
-          {/* Eyebrow + Headline */}
-          <div className="text-xs font-extrabold text-white/80 tracking-widest uppercase mb-4">
-            GIOP PLATFORM
+      {/* PRIORITY EXPLANATION */}
+
+      <section className="section explain-section">
+        <Reveal className="section-heading">
+          <div>
+            <span className="section-kicker">EXPLAINABLE PRIORITY</span>
+
+            <h2>
+              Every priority
+              <br />
+              has a <em>reason.</em>
+            </h2>
           </div>
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tighter leading-[1.08] max-w-2xl mb-12">
-            Imagine grievances that resolve themselves.
+
+          <div className="section-heading-right">
+            <p>
+              AI should not produce a mysterious number. Administrators can
+              see exactly which signals contributed to a complaint's priority.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal className="priority-board">
+          <div className="priority-main">
+            <div className="priority-board-top">
+              <span>INCIDENT #1042</span>
+              <span>AI ASSESSMENT</span>
+            </div>
+
+            <h3>Hostel Block A — Water Supply Failure</h3>
+
+            <div className="priority-big">
+              <small>PRIORITY</small>
+              <strong>P1</strong>
+              <span>Critical</span>
+            </div>
+          </div>
+
+          <div className="reason-list">
+            <div className="reason-item">
+              <span>Affected students</span>
+              <div>
+                <i style={{ width: "90%" }} />
+              </div>
+              <strong>+35</strong>
+            </div>
+
+            <div className="reason-item">
+              <span>Service disruption</span>
+              <div>
+                <i style={{ width: "75%" }} />
+              </div>
+              <strong>+25</strong>
+            </div>
+
+            <div className="reason-item">
+              <span>Repeated complaints</span>
+              <div>
+                <i style={{ width: "62%" }} />
+              </div>
+              <strong>+20</strong>
+            </div>
+
+            <div className="reason-item">
+              <span>SLA proximity</span>
+              <div>
+                <i style={{ width: "48%" }} />
+              </div>
+              <strong>+10</strong>
+            </div>
+
+            <div className="reason-total">
+              <span>Total priority score</span>
+              <strong>90 / 100</strong>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* SMART ROUTING */}
+
+      <section className="section routing-section">
+        <Reveal className="split-heading">
+          <span className="section-kicker">SMART ROUTING</span>
+
+          <h2>
+            The right complaint.
+            <br />
+            <em>To the right department.</em>
           </h2>
 
-          <div className="border-t border-white/20 my-10" />
+          <p>
+            AI classification turns unstructured grievances into clear,
+            actionable workflows—without forcing administrators to manually
+            sort every submission.
+          </p>
+        </Reveal>
 
-          {/* 5-Column Link Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 text-sm">
-            {/* Column 1: Product */}
-            <div>
-              <div className="font-bold text-white mb-4 text-sm">Product</div>
-              {["Pricing", "Dashboard", "Intake API", "Analytics"].map(
-                (item) => (
-                  <a
-                    key={item}
-                    href="#"
-                    className="text-white/80 hover:text-white transition-colors block mb-2.5 text-xs sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
-                  >
-                    {item}
-                  </a>
-                )
-              )}
-            </div>
-
-            {/* Column 2: Institution */}
-            <div>
-              <div className="font-bold text-white mb-4 text-sm">
-                Institution
-              </div>
-              {["About GIOP", "Careers", "Blog", "Changelog"].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="text-white/80 hover:text-white transition-colors block mb-2.5 text-xs sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
-
-            {/* Column 3: Departments */}
-            <div>
-              <div className="font-bold text-white mb-4 text-sm">
-                Departments
-              </div>
-              {["Hostel", "Exam Cell", "Academics", "Admin"].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="text-white/80 hover:text-white transition-colors block mb-2.5 text-xs sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
-
-            {/* Column 4: Resources */}
-            <div>
-              <div className="font-bold text-white mb-4 text-sm">
-                Resources
-              </div>
-              {["Research", "Trust Center", "Security", "Docs"].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="text-white/80 hover:text-white transition-colors block mb-2.5 text-xs sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
-
-            {/* Column 5: Connect */}
-            <div>
-              <div className="font-bold text-white mb-4 text-sm">Connect</div>
-              {["Contact", "Twitter", "LinkedIn", "GitHub"].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="text-white/80 hover:text-white transition-colors block mb-2.5 text-xs sm:text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
+        <Reveal className="routing-flow">
+          <div className="routing-node input-node">
+            <span>01</span>
+            <strong>Complaint</strong>
+            <small>Unstructured input</small>
           </div>
 
-          <div className="border-t border-white/20 pt-8 mt-12 flex flex-col sm:flex-row justify-between items-center text-xs text-white/60 gap-4">
-            <div>© 2026 GIOP Platform. All rights reserved.</div>
-            <div className="flex items-center gap-6">
-              <a
-                href="#"
-                className="hover:text-white transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
-              >
-                Privacy
-              </a>
-              <a
-                href="#"
-                className="hover:text-white transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
-              >
-                Terms
-              </a>
+          <div className="flow-arrow">→</div>
+
+          <div className="routing-node ai-node">
+            <span>02</span>
+            <strong>AI classification</strong>
+            <small>Category · impact · urgency</small>
+          </div>
+
+          <div className="flow-arrow">→</div>
+
+          <div className="routing-node destination-node">
+            <span>03</span>
+            <strong>Responsible team</strong>
+            <small>Department · officer · SLA</small>
+          </div>
+        </Reveal>
+
+        <Reveal className="department-grid">
+          {[
+            ["HOSTEL", "Maintenance", "Warden"],
+            ["ACADEMIC", "Academic Section", "HOD"],
+            ["FINANCE", "Accounts", "Scholarship Cell"],
+            ["SAFETY", "Security", "Administration"],
+          ].map(([title, first, second]) => (
+            <div className="department-card" key={title}>
+              <span>{title}</span>
+              <strong>{first}</strong>
+              <small>{second}</small>
+              <Arrow />
+            </div>
+          ))}
+        </Reveal>
+      </section>
+
+      {/* SLA */}
+
+      <section className="sla-section">
+        <Reveal className="sla-content">
+          <div className="sla-copy">
+            <span className="section-kicker light">SLA & ESCALATION</span>
+
+            <h2>
+              Never let an important
+              <br />
+              complaint <em>disappear.</em>
+            </h2>
+
+            <p>
+              Monitor resolution commitments in real time. When an incident
+              approaches its SLA threshold, automatically escalate it through
+              the configured institutional hierarchy.
+            </p>
+
+            <a href="#demo" className="button button-light">
+              Explore escalation <Arrow />
+            </a>
+          </div>
+
+          <div className="sla-dashboard">
+            <div className="sla-dashboard-top">
+              <span>MASTER INCIDENT #1042</span>
+              <span className="warning">ESCALATION RISK</span>
+            </div>
+
+            <h3>Hostel Water Supply</h3>
+
+            <div className="sla-info">
+              <div>
+                <span>Priority</span>
+                <strong>P1</strong>
+              </div>
+
+              <div>
+                <span>Affected</span>
+                <strong>126</strong>
+              </div>
+
+              <div>
+                <span>Open for</span>
+                <strong>68h</strong>
+              </div>
+            </div>
+
+            <div className="sla-meter">
+              <div className="sla-meter-label">
+                <span>SLA CONSUMED</span>
+                <strong>89%</strong>
+              </div>
+
+              <div className="sla-track">
+                <i />
+              </div>
+            </div>
+
+            <div className="escalation-line">
+              <span>Current owner</span>
+              <strong>Estate Department</strong>
+            </div>
+
+            <div className="escalation-line">
+              <span>Next escalation</span>
+              <strong>Dean / Administration →</strong>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* HUMAN IN LOOP */}
+
+      <section className="section human-section">
+        <Reveal className="section-heading">
+          <div>
+            <span className="section-kicker">HUMAN IN THE LOOP</span>
+
+            <h2>
+              AI where it helps.
+              <br />
+              Humans where it <em>matters.</em>
+            </h2>
+          </div>
+
+          <div className="section-heading-right">
+            <p>
+              Uncertain classifications, duplicate merges and AI-generated
+              responses remain reviewable by authorized officers.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal className="human-grid">
+          <div className="human-card">
+            <span>01</span>
+            <div className="human-icon">✦</div>
+            <h3>AI analysis</h3>
+            <p>
+              Classification, extraction, sentiment, impact and similarity are
+              handled automatically.
+            </p>
+          </div>
+
+          <div className="human-card">
+            <span>02</span>
+            <div className="human-icon">◌</div>
+            <h3>Human review</h3>
+            <p>
+              Officers can approve uncertain classifications, merges and
+              actions before they become operational.
+            </p>
+          </div>
+
+          <div className="human-card">
+            <span>03</span>
+            <div className="human-icon">↗</div>
+            <h3>Audit trail</h3>
+            <p>
+              Every important action is recorded with the responsible user and
+              timestamp.
+            </p>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* RESPONSE */}
+
+      <section className="response-section">
+        <Reveal className="response-content">
+          <div className="response-copy">
+            <span className="section-kicker">GROUNDED RESPONSE</span>
+
+            <h2>
+              Generate responses.
+              <br />
+              Keep the <em>decision</em> with the officer.
+            </h2>
+
+            <p>
+              Create context-aware response drafts using the current incident,
+              institutional policies and resolution status—then let an
+              authorized officer review, edit and send.
+            </p>
+          </div>
+
+          <div className="response-card">
+            <div className="response-card-top">
+              <span>AI DRAFT</span>
+              <span>GROUNDED</span>
+            </div>
+
+            <p className="response-text">
+              "We acknowledge the disruption in Hostel Block A. The issue has
+              been assigned to the Estate Department and is currently being
+              investigated. We will provide an update as soon as the next
+              resolution milestone is reached."
+            </p>
+
+            <div className="response-sources">
+              <span>Sources</span>
+              <div>Maintenance policy</div>
+              <div>Hostel grievance procedure</div>
+              <div>Current incident status</div>
+            </div>
+
+            <div className="response-actions">
+              <button>Review draft</button>
+              <button>Edit</button>
+              <button className="send">Send</button>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ANALYTICS */}
+
+      <section className="section analytics-section">
+        <Reveal className="section-heading">
+          <div>
+            <span className="section-kicker">INSTITUTIONAL ANALYTICS</span>
+
+            <h2>
+              See what your
+              <br />
+              institution is <em>struggling with.</em>
+            </h2>
+          </div>
+
+          <div className="section-heading-right">
+            <p>
+              Turn thousands of individual complaints into a clear picture of
+              recurring problems, response performance and institutional risk.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal className="analytics-dashboard">
+          <div className="metric">
+            <span>Total complaints</span>
+            <strong>12,842</strong>
+            <small>↑ 18.4% this month</small>
+          </div>
+
+          <div className="metric">
+            <span>Master incidents</span>
+            <strong>1,284</strong>
+            <small>9.9% of total complaints</small>
+          </div>
+
+          <div className="metric">
+            <span>Within SLA</span>
+            <strong>87%</strong>
+            <small>↑ 6.2% improvement</small>
+          </div>
+
+          <div className="metric">
+            <span>Critical incidents</span>
+            <strong>23</strong>
+            <small>4 currently escalating</small>
+          </div>
+
+          <div className="analytics-chart">
+            <div className="analytics-chart-head">
+              <div>
+                <span>COMPLAINTS BY CATEGORY</span>
+                <h3>Institutional pressure</h3>
+              </div>
+
+              <span>LAST 30 DAYS</span>
+            </div>
+
+            {[
+              ["Infrastructure", 88],
+              ["Academic", 69],
+              ["Hostel", 57],
+              ["Finance", 43],
+              ["Administration", 31],
+            ].map(([label, value]) => (
+              <div className="analytics-row" key={label}>
+                <span>{label}</span>
+                <div>
+                  <i style={{ width: `${value}%` }} />
+                </div>
+                <strong>{value}</strong>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
+      {/* SECURITY */}
+
+      <section className="security-section" id="security">
+        <Reveal className="security-intro">
+          <span className="section-kicker light">SECURITY & GOVERNANCE</span>
+
+          <h2>
+            Built for accountable
+            <br />
+            institutional <em>governance.</em>
+          </h2>
+
+          <p>
+            A complaint system handles real people, real problems and
+            sensitive information. Governance is part of the product—not an
+            afterthought.
+          </p>
+        </Reveal>
+
+        <Reveal className="security-grid">
+          {securityCards.map((card) => (
+            <article className="security-card" key={card.number}>
+              <span>{card.number}</span>
+
+              <div className="security-symbol">
+                <i />
+              </div>
+
+              <h3>{card.title}</h3>
+              <p>{card.text}</p>
+
+              <Arrow />
+            </article>
+          ))}
+        </Reveal>
+      </section>
+
+      {/* CUSTOMERS / DOMAINS */}
+
+      <section className="section domains-section">
+        <Reveal className="section-heading">
+          <div>
+            <span className="section-kicker">ONE PLATFORM</span>
+
+            <h2>
+              Designed around
+              <br />
+              <em>institutional reality.</em>
+            </h2>
+          </div>
+
+          <div className="section-heading-right">
+            <p>
+              A single intelligence layer can serve the many departments,
+              workflows and people involved in resolving institutional
+              grievances.
+            </p>
+          </div>
+        </Reveal>
+
+        <Reveal className="domain-grid">
+          {customers.map((customer, index) => (
+            <div className="domain-cell" key={customer}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{customer}</strong>
+              <Arrow />
+            </div>
+          ))}
+        </Reveal>
+      </section>
+
+      {/* FINAL CTA */}
+
+      <section className="final-section" id="demo">
+        <div className="final-grid" />
+
+        <Reveal className="final-content">
+          <span className="section-kicker light">SIH 2026 · COMPLAINT INTELLIGENCE</span>
+
+          <h2>
+            Imagine an institution
+            <br />
+            where no important
+            <br />
+            complaint gets <em>lost.</em>
+          </h2>
+
+          <p>
+            From the first submission to final resolution, transform scattered
+            grievances into measurable institutional intelligence.
+          </p>
+
+          <div className="hero-buttons">
+            <button className="button button-white">
+              Explore the platform <Arrow />
+            </button>
+
+            <a href="#platform" className="final-link">
+              Learn more <span>↓</span>
+            </a>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* FOOTER */}
+
+      <footer className="footer">
+        <div className="footer-top">
+          <div className="footer-brand">
+            <a href="#" className="brand footer-brand-logo">
+              <span className="brand-mark">
+                <span />
+                <span />
+                <span />
+              </span>
+              <span>Resolve</span>
+            </a>
+
+            <p>
+              AI-powered grievance intelligence for faster resolution, smarter
+              routing and accountable governance.
+            </p>
+          </div>
+
+          <div className="footer-links">
+            <div>
+              <span>PRODUCT</span>
+              <a href="#platform">Complaint Intelligence</a>
+              <a href="#intelligence">Master Incidents</a>
+              <a href="#intelligence">Prioritization</a>
+              <a href="#intelligence">SLA & Escalation</a>
+            </div>
+
+            <div>
+              <span>PLATFORM</span>
+              <a href="#platform">Multi-modal Intake</a>
+              <a href="#intelligence">AI Classification</a>
+              <a href="#intelligence">Semantic Deduplication</a>
+              <a href="#intelligence">Analytics</a>
+            </div>
+
+            <div>
+              <span>GOVERNANCE</span>
+              <a href="#security">Roles & Permissions</a>
+              <a href="#security">Audit Logs</a>
+              <a href="#security">Data Governance</a>
+              <a href="#security">Human Review</a>
+            </div>
+
+            <div>
+              <span>PROJECT</span>
+              <a href="#demo">SIH 2026</a>
+              <a href="#platform">Architecture</a>
+              <a href="#intelligence">AI Methodology</a>
+              <a href="#demo">Demo</a>
             </div>
           </div>
         </div>
+
+        <div className="footer-bottom">
+          <span>© 2026 Resolve · SIH 2026</span>
+
+          <div>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <a href="#">GitHub ↗</a>
+          </div>
+        </div>
       </footer>
-    </div>
+    </main>
   );
 }
