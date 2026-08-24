@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
 const navItems = ["Platform", "Intelligence", "Security", "Resources"];
 
@@ -116,6 +116,7 @@ function Reveal({
 }
 
 export default function Home() {
+
   const [activeTab, setActiveTab] =
     useState<keyof typeof benchmarkData>("priority");
 
@@ -129,6 +130,12 @@ export default function Home() {
 
   const bars = benchmarkData[activeTab];
 
+  const router = useRouter();
+    const handleRedirect = () => {
+    router.push('/signup');
+    console.log("To Signup");
+    
+  };
   return (
     <main className="site">
       {/* NAVIGATION */}
@@ -200,13 +207,41 @@ export default function Home() {
             </p>
 
             <div className="hero-buttons">
-          <Link href="/login" className="text-[#3D4FFF] font-bold hover:underline">
-            Log in
-          </Link>
-
-         <Link href="/signup" className="text-[#3D4FFF] font-bold hover:underline">
+          <button
+            type="button"
+            className="giop-black-btn"
+            style={{
+              border: "none",
+              color: "#fff",
+              fontSize: 13.5,
+              fontWeight: 600,
+              padding: "10px 18px",
+              borderRadius: 8,
+              cursor: "pointer",
+              background:"#3948e8"
+            }}
+            onClick={handleRedirect}
+          >
             Sign up
-          </Link>
+          </button>
+
+          <button
+            type="button"
+            className="giop-black-btn"
+            style={{    
+              border: "none",
+              color: "#fff",
+              fontSize: 13.5,
+              fontWeight: 600,
+              padding: "10px 18px",
+              borderRadius: 8,
+              cursor: "pointer",
+              background:"#3948e8"
+            }}
+            onClick={handleRedirect}
+          >
+            Sign up
+          </button>
             </div>
           </Reveal>
 
