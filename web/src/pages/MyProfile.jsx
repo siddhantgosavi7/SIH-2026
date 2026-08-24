@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList, Shield, Trash2, Upload, UserPlus, Users, Activity,
   User as UserIcon, ChevronDown, ChevronUp, BookOpen, Pencil, Save, X,
-  Eye, FileText, UserCheck, Clock, Calendar, AlertCircle, MessageSquare, Send, Mail
+  Eye, FileText, UserCheck, Clock, Calendar, AlertCircle, MessageSquare, Send, Mail,
+  Search, Check,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { AdminDashboard } from './AdminDashboard';
@@ -19,8 +20,26 @@ const YEAR_SEMESTERS = [
   '5th Semester', '6th Semester', '7th Semester', '8th Semester',
 ];
 
+// ─── Case progress timeline ───────────────────────────────────────────────────
+const CASE_STEPS = ['Submitted', 'Department Review', 'Action Taken', 'Resolved'];
+
+// Returns 'done' | 'current' | 'pending' | 'resolved-done' for each of the 4 steps
+function getTimelineStates(status) {
+  let currentIndex;
+  if (status === 'in_progress' || status === 'escalated') currentIndex = 2;
+  else if (status === 'resolved' || status === 'closed') currentIndex = 3;
+  else currentIndex = 1; // 'open' and any unrecognised status
+
+  return CASE_STEPS.map((_, i) => {
+    if (currentIndex === 3 && i === 3) return 'resolved-done';
+    if (i < currentIndex) return 'done';
+    if (i === currentIndex) return 'current';
+    return 'pending';
+  });
+}
+
 // ─── Student My Info Tab ──────────────────────────────────────────────────────
-function StudentInfoTab({ api, setMessage }) {
+function StudentInfoTab({ api, setMessage, onProfileSaved }) {
   const [profile, setProfile] = useState(null);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,6 +59,7 @@ function StudentInfoTab({ api, setMessage }) {
     try {
       const data = await api('/students/me/profile');
       setProfile(data);
+      if (onProfileSaved) onProfileSaved(data);
       setForm({
         full_name: data.full_name,
         department: data.department,
@@ -104,6 +124,7 @@ function StudentInfoTab({ api, setMessage }) {
       setProfile(data);
       setEditing(false);
       setMessage('Academic profile saved!');
+      if (onProfileSaved) onProfileSaved(data);
     } catch (err) {
       if (err.message?.includes('PRN already registered')) {
         setPrnError('This PRN is already registered to another account.');
@@ -558,10 +579,14 @@ export function MyProfile() {
   const [usersList, setUsersList] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [studentProfiles, setStudentProfiles] = useState([]);
+  const [studentOwnProfile, setStudentOwnProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('grievances'); // 'grievances' | 'my-info' | 'messages'
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [messageRecipient, setMessageRecipient] = useState(null); // { user, complaint }
   const [unreadCount, setUnreadCount] = useState(0);
+  const [caseSearch, setCaseSearch] = useState('');
+  const [caseStatusFilter, setCaseStatusFilter] = useState('all'); // 'all' | 'open' | 'resolved'
+  const [descText, setDescText] = useState(''); // controlled textarea for char counter
   const navigate = useNavigate();
 
   function handleSignOut() {
@@ -572,9 +597,20 @@ export function MyProfile() {
   useEffect(() => {
     if (session?.role === 'admin') {
       fetchAdminData();
+    } else if (session?.role === 'student') {
+      fetchOwnProfile();
     }
     fetchUnreadCount();
   }, [session]);
+
+  async function fetchOwnProfile() {
+    try {
+      const data = await api('/students/me/profile');
+      setStudentOwnProfile(data);
+    } catch {
+      setStudentOwnProfile(null);
+    }
+  }
 
   async function fetchUnreadCount() {
     try {
@@ -619,6 +655,12 @@ export function MyProfile() {
 
   async function createComplaint(event) {
     event.preventDefault();
+    if (session?.role === 'student' && (!studentOwnProfile || !studentOwnProfile.prn_number)) {
+      setMessage("Please complete your Academic Profile in 'My Info' before submitting a grievance.");
+      setActiveTab('my-info');
+      return;
+    }
+
     const formEl = event.currentTarget;
     const form = new FormData(formEl);
     try {
@@ -633,9 +675,13 @@ export function MyProfile() {
         }),
       });
       formEl.reset();
+      setDescText('');
       setMessage('Complaint submitted successfully');
       await load();
     } catch (err) {
+      if (err.message?.includes('Academic Profile') || err.message?.includes('My Info')) {
+        setActiveTab('my-info');
+      }
       setMessage(err.message);
     }
   }
@@ -660,6 +706,20 @@ export function MyProfile() {
       setMessage(err.message);
     }
   }
+
+  const filteredCases = (cases || []).filter((item) => {
+    const q = caseSearch.trim().toLowerCase();
+    const matchesSearch = !q
+      || item.title?.toLowerCase().includes(q)
+      || item.description?.toLowerCase().includes(q)
+      || item.department?.toLowerCase().includes(q);
+    const matchesStatus = caseStatusFilter === 'all'
+      ? true
+      : caseStatusFilter === 'open'
+      ? ['open', 'in_progress', 'escalated'].includes(item.status)
+      : ['resolved', 'closed'].includes(item.status);
+    return matchesSearch && matchesStatus;
+  });
 
   if (!session) return null;
 
@@ -752,10 +812,13 @@ export function MyProfile() {
         </div>
       )}
 
-      {/* ── My Info Tab ─────────────────────────────────────────────────── */}
       {session.role === 'student' && activeTab === 'my-info' && (
         <div style={{ padding: '24px clamp(18px, 4vw, 48px)' }}>
-          <StudentInfoTab api={api} setMessage={setMessage} />
+          <StudentInfoTab
+            api={api}
+            setMessage={setMessage}
+            onProfileSaved={(p) => setStudentOwnProfile(p)}
+          />
         </div>
       )}
 
@@ -773,100 +836,210 @@ export function MyProfile() {
       {/* ── My Grievances Tab (+ non-student views) ─────────────────────── */}
       {(session.role !== 'student' || activeTab === 'grievances') && (
         <section className={`layout ${session.role !== 'student' ? 'single' : ''}`}>
-          {session.role === 'student' && (
-            <form className="panel form" onSubmit={createComplaint}>
-              <ClipboardList size={22} />
-              <h2>Submit a grievance</h2>
-              <p className="helper">Describe issue clearly. Priority and routing remain subject to authorized review.</p>
-              <select name="department" defaultValue="Hostel" required>
-                <option value="Hostel">Hostel</option>
-                <option value="CSE">CSE</option>
-                <option value="AIML">AIML</option>
-                <option value="CSBS">CSBS</option>
-                <option value="Mechanical">Mechanical</option>
-                <option value="Electrical">Electrical</option>
-                <option value="ENTC">ENTC</option>
-                <option value="Biotech">Biotech</option>
-                <option value="Exam Cell">Exam Cell</option>
-                <option value="Canteen">Canteen</option>
-              </select>
-              <input name="title" placeholder="Title" required />
-              <textarea name="description" placeholder="Describe issue" required />
-              <select name="priority" defaultValue="normal">
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-              <button>Create</button>
-            </form>
-          )}
+          {session.role === 'student' && (() => {
+            const profileReady = studentOwnProfile && studentOwnProfile.prn_number && studentOwnProfile.full_name;
+            return (
+              <div className="panel form">
+                <ClipboardList size={22} />
+                <h2>Submit a grievance</h2>
+                {!profileReady ? (
+                  <>
+                    <div style={{
+                      marginBottom: '18px', padding: '14px 16px', borderRadius: '10px',
+                      backgroundColor: '#fff7ed', border: '1.5px solid #fb923c',
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                    }}>
+                      <span style={{ fontSize: '20px' }}>🔒</span>
+                      <div>
+                        <strong style={{ fontSize: '13px', color: '#92400e', display: 'block' }}>Academic Profile Required</strong>
+                        <span style={{ fontSize: '12px', color: '#78350f' }}>
+                          Fill in your{' '}
+                          <button type="button" onClick={() => setActiveTab('my-info')}
+                            style={{ background: 'none', border: 'none', color: '#176b87', fontWeight: 700, cursor: 'pointer', padding: 0, fontSize: '12px', textDecoration: 'underline' }}>
+                            My Info
+                          </button>{' '}
+                          (Full Name, PRN, Department…) before submitting.
+                        </span>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => setActiveTab('my-info')}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: '#176b87', color: '#fff', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer' }}>
+                      Go to My Info →
+                    </button>
+                  </>
+                ) : (
+                  <form onSubmit={createComplaint}>
+                    <p className="helper" style={{ marginBottom: '12px' }}>Describe issue clearly. Priority and routing remain subject to authorized review.</p>
+                    <select name="department" defaultValue="Hostel" required>
+                      <option value="Hostel">Hostel</option>
+                      <option value="CSE">CSE</option>
+                      <option value="AIML">AIML</option>
+                      <option value="CSBS">CSBS</option>
+                      <option value="Mechanical">Mechanical</option>
+                      <option value="Electrical">Electrical</option>
+                      <option value="ENTC">ENTC</option>
+                      <option value="Biotech">Biotech</option>
+                      <option value="Exam Cell">Exam Cell</option>
+                      <option value="Canteen">Canteen</option>
+                    </select>
+                    <input name="title" placeholder="Title" required />
+                    <textarea
+                      name="description"
+                      placeholder="Describe issue"
+                      required
+                      minLength={20}
+                      maxLength={1000}
+                      value={descText}
+                      onChange={(e) => setDescText(e.target.value)}
+                      rows={5}
+                    />
+                    <p className="helper" style={{ marginTop: '-8px', fontSize: '11px' }}>
+                      Min. 20 characters required. Provide specific details (e.g., location, dates, people involved).
+                    </p>
+                    <p style={{ textAlign: 'right', fontSize: '11px', color: '#94a3b8', margin: '-4px 0 8px' }}>
+                      {descText.length} / 1000
+                    </p>
+                    <select name="priority" defaultValue="">
+                      <option value="" disabled>Priority</option>
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                    <button style={{ width: '100%', marginTop: '4px', backgroundColor: '#176b87', color: '#fff', fontWeight: 700, fontSize: '15px' }}>Create</button>
+                  </form>
+                )}
+              </div>
+            );
+          })()}
 
           <section className="panel queue">
-            <Shield size={22} />
-            <h2>
-              {session.role === 'student'
-                ? 'My case history'
-                : session.role === 'admin'
-                ? 'All institutional cases'
-                : 'My department queue'}
-            </h2>
-            <p className="helper">
-              {session.role === 'student'
-                ? 'Only you can see these cases.'
-                : session.role === 'admin'
-                ? 'Central administrators can oversee all cases.'
-                : 'Server-side scope restricts this queue to your department.'}
-            </p>
-            <div className="cases">
-              {cases.map((item) => (
-                <article
-                  className="case"
-                  key={item.id}
-                  style={{ cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s' }}
-                  onClick={() => setSelectedComplaint(item)}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <strong style={{ fontSize: '15px', color: '#0f172a' }}>{item.title}</strong>
-                      <span className={`badge-status ${item.status}`}>
-                        {item.status.replace('_', ' ')}
-                      </span>
-                    </div>
+            <div className="queue-header">
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Shield size={22} />
+                  <h2>
+                    {session.role === 'student'
+                      ? 'My case history'
+                      : session.role === 'admin'
+                      ? 'All institutional cases'
+                      : 'My department queue'}
+                  </h2>
+                </div>
+                <p className="helper">
+                  {session.role === 'student'
+                    ? 'Only you can see these cases.'
+                    : session.role === 'admin'
+                    ? 'Central administrators can oversee all cases.'
+                    : 'Server-side scope restricts this queue to your department.'}
+                </p>
+              </div>
 
-                    {/* Submitter Identity Badge Info */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', fontSize: '12px', color: '#475569', flexWrap: 'wrap' }}>
-                      <span>Dept: <strong>{item.department}</strong></span>
-                      <span>Priority: <strong>{item.priority}</strong></span>
-                      <span style={{ color: '#0d9488', fontWeight: 600, background: '#f0fdf4', padding: '2px 8px', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
-                        👤 {item.student_name || 'Student'} (PRN: {item.student_prn || 'N/A'} · Div: {item.student_division || '—'} · Roll: {item.student_roll_no || '—'})
-                      </span>
-                    </div>
-
-                    {/* Issue Description Preview snippet */}
-                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '6px', lineHeight: '1.4' }}>
-                      {item.description ? (item.description.length > 90 ? item.description.substring(0, 90) + '...' : item.description) : 'No description'}
-                    </p>
-                  </div>
-
-                  <div className="actions" onClick={(e) => e.stopPropagation()}>
-                    <button className="ghost" title="View Full Details" onClick={() => setSelectedComplaint(item)}>
-                      <Eye size={16} />
+              <div className="queue-controls">
+                <div className="search-box">
+                  <Search size={15} color="#94a3b8" />
+                  <input
+                    type="text"
+                    placeholder="Search grievances..."
+                    value={caseSearch}
+                    onChange={(e) => setCaseSearch(e.target.value)}
+                  />
+                </div>
+                <div className="status-filter">
+                  {['all', 'open', 'resolved'].map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      className={`filter-btn${caseStatusFilter === f ? ' active' : ''}`}
+                      onClick={() => setCaseStatusFilter(f)}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
-                    {session.role !== 'student' && item.status !== 'closed' && (
-                      <>
-                        <button title="Start work" onClick={() => transition(item.id, 'in_progress')}><UserPlus size={16} /></button>
-                        <button title="Resolve" onClick={() => transition(item.id, 'resolved')}><Upload size={16} /></button>
-                      </>
-                    )}
-                    {(session.role === 'student' || item.status === 'resolved' || item.status === 'closed') && (
-                      <button className="btn-delete" title="Delete complaint" onClick={() => deleteComplaint(item.id)}>
-                        <Trash2 size={16} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="cases">
+              {filteredCases.length === 0 && (
+                <p className="helper" style={{ padding: '12px 0' }}>No grievances match this search/filter.</p>
+              )}
+              {filteredCases.map((item) => {
+                const timelineStates = getTimelineStates(item.status);
+                const statusLabel = item.status === 'in_progress' ? 'IN PROGRESS' : item.status.toUpperCase().replace('_', ' ');
+                return (
+                  <article
+                    className="case"
+                    key={item.id}
+                    style={{ cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s' }}
+                    onClick={() => setSelectedComplaint(item)}
+                  >
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {/* Title row + status badge */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                        <strong style={{ fontSize: '15px', color: '#0f172a', lineHeight: 1.3 }}>{item.title}</strong>
+                        <span className={`badge-status ${item.status}`} style={{ flexShrink: 0 }}>{statusLabel}</span>
+                      </div>
+
+                      {/* Dept + Priority */}
+                      <div style={{ fontSize: '12px', color: '#475569' }}>
+                        Dept: <strong>{item.department}</strong>&nbsp;&nbsp; Priority: <strong>{item.priority}</strong>
+                      </div>
+
+                      {/* Student identity pill (non-student views only) */}
+                      {session.role !== 'student' && (
+                        <span style={{ alignSelf: 'flex-start', color: '#0369a1', fontWeight: 600, background: '#e0f2fe', padding: '3px 10px', borderRadius: '20px', border: '1px solid #bae6fd', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          👤 {item.student_prn || 'N/A'} · Div: {item.student_division || '—'} · Roll: {item.student_roll_no || '—'}
+                        </span>
+                      )}
+
+                      {/* Timeline steps */}
+                      <div className="case-timeline">
+                        {CASE_STEPS.map((label, i) => {
+                          const state = timelineStates[i];
+                          const isLast = i === CASE_STEPS.length - 1;
+                          const isFilled = state === 'done' || state === 'resolved-done';
+                          return (
+                            <div className={`timeline-step ${state}`} key={label}>
+                              <div className="step-marker">
+                                <span className="step-dot">
+                                  {isFilled ? <Check size={12} strokeWidth={3} /> : null}
+                                </span>
+                                {!isLast && <span className="step-line" />}
+                              </div>
+                              <span className="step-label">{label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Description snippet */}
+                      <p className="case-description">
+                        {item.description
+                          ? (item.description.length > 90 ? item.description.substring(0, 90) + '...' : item.description)
+                          : 'No description'}
+                      </p>
+                    </div>
+
+                    <div className="actions" onClick={(e) => e.stopPropagation()}>
+                      <button className="ghost" title="View Full Details" onClick={() => setSelectedComplaint(item)}>
+                        <Eye size={16} />
                       </button>
-                    )}
-                  </div>
-                </article>
-              ))}
+                      {session.role !== 'student' && item.status !== 'closed' && (
+                        <>
+                          <button title="Start work" onClick={() => transition(item.id, 'in_progress')}><UserPlus size={16} /></button>
+                          <button title="Resolve" onClick={() => transition(item.id, 'resolved')}><Upload size={16} /></button>
+                        </>
+                      )}
+                      {(session.role === 'student' || item.status === 'resolved' || item.status === 'closed') && (
+                        <button className="btn-delete" title="Delete complaint" onClick={() => deleteComplaint(item.id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         </section>

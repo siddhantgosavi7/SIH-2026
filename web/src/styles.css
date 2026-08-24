@@ -498,6 +498,160 @@ textarea {
   color: #475569;
 }
 
+/* ─── Queue header: search + status filter ────────────────────────────────── */
+.queue-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.queue-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 240px;
+  border: 1px solid #d8e0e7;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+  min-height: 38px;
+}
+
+.search-box input {
+  border: none;
+  background: transparent;
+  min-height: 34px;
+  padding: 0;
+  width: 100%;
+}
+
+.search-box input:focus {
+  outline: none;
+}
+
+.status-filter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #eef2f5;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.filter-btn {
+  background: transparent;
+  color: #475569;
+  min-height: 30px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.filter-btn.active {
+  background: #0f2f42;
+  color: #ffffff;
+}
+
+/* ─── Case status timeline ──────────────────────────────────────────────────── */
+.case-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-step {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 26px;
+}
+
+.step-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.step-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #cbd5e1;
+  background: #ffffff;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.step-line {
+  width: 2px;
+  flex: 1;
+  min-height: 10px;
+  background: #cbd5e1;
+  margin: 2px 0;
+}
+
+.step-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  padding-top: 1px;
+}
+
+.timeline-step.done .step-dot,
+.timeline-step.resolved-done .step-dot {
+  background: #22c55e;
+  border-color: #22c55e;
+}
+
+.timeline-step.resolved-done .step-dot {
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+}
+
+.timeline-step.done .step-line,
+.timeline-step.resolved-done .step-line {
+  background: #22c55e;
+}
+
+.timeline-step.done .step-label,
+.timeline-step.resolved-done .step-label {
+  color: #1d2630;
+}
+
+.timeline-step.current .step-dot {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.timeline-step.current .step-label {
+  color: #b45309;
+}
+
+.timeline-step.pending .step-label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.case-description {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

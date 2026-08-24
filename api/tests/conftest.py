@@ -14,7 +14,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import get_db
 from app.main import app
-from app.models import Base, Role, User
+from app.models import Base, Role, StudentProfile, User
 from app.security import hash_password
 
 engine = create_engine("sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -25,14 +25,16 @@ TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=Fals
 def db() -> Generator[Session, None, None]:
     Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
-    session.add_all(
-        [
-            User(email="student@example.edu", username="student", hashed_password=hash_password("password123"), role=Role.student.value, department=None),
-            User(email="other@example.edu", username="other", hashed_password=hash_password("password123"), role=Role.student.value, department=None),
-            User(email="hostel@example.edu", username="hostel", hashed_password=hash_password("password123"), role=Role.staff.value, department="Hostel"),
-            User(email="admin@example.edu", username="admin", hashed_password=hash_password("password123"), role=Role.admin.value, department=None),
-        ]
-    )
+    u1 = User(email="student@example.edu", username="student", hashed_password=hash_password("password123"), role=Role.student.value, department=None)
+    u2 = User(email="other@example.edu", username="other", hashed_password=hash_password("password123"), role=Role.student.value, department=None)
+    u3 = User(email="hostel@example.edu", username="hostel", hashed_password=hash_password("password123"), role=Role.staff.value, department="Hostel")
+    u4 = User(email="admin@example.edu", username="admin", hashed_password=hash_password("password123"), role=Role.admin.value, department=None)
+    session.add_all([u1, u2, u3, u4])
+    session.flush()
+    session.add_all([
+        StudentProfile(user_id=u1.id, full_name="Student User", department="Computer Science", prn_number="2425000001", division="A", roll_no="1"),
+        StudentProfile(user_id=u2.id, full_name="Other Student", department="Computer Science", prn_number="2425000002", division="B", roll_no="2"),
+    ])
     session.commit()
     try:
         yield session

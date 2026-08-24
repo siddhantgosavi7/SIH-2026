@@ -360,6 +360,15 @@ async def create_complaint(
 ):
     require_role(current, Role.student, Role.admin)
 
+    # Require academic student profile for students before submitting grievance
+    if current.role == Role.student.value:
+        profile = db.query(StudentProfile).filter(StudentProfile.user_id == current.id).one_or_none()
+        if not profile or not profile.prn_number or not profile.full_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please complete your Academic Profile in 'My Info' before submitting a grievance."
+            )
+
     # Validate department against seeded list
     dept = payload.department or "Hostel"
     if dept not in DEPARTMENTS:
