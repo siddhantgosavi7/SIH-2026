@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList, Shield, Trash2, Upload, UserPlus, Users, Activity,
   User as UserIcon, ChevronDown, ChevronUp, BookOpen, Pencil, Save, X,
-  Eye, FileText, UserCheck, Clock, Calendar, AlertCircle
+  Eye, FileText, UserCheck, Clock, Calendar, AlertCircle, MessageSquare, Send, Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -322,14 +322,245 @@ function AdminUserRow({ user, studentProfiles }) {
   );
 }
 
+// ─── Message Modal Component ──────────────────────────────────────────────────
+function MessageModal({ recipient, complaint, api, setMessage, onClose }) {
+  const [sending, setSending] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+
+  async function handleSend(e) {
+    e.preventDefault();
+    if (!body.trim()) {
+      setMessage('Please enter a message');
+      return;
+    }
+    setSending(true);
+    try {
+      await api('/messages', {
+        method: 'POST',
+        body: JSON.stringify({
+          recipient_id: recipient.id,
+          complaint_id: complaint?.id || null,
+          subject: subject.trim() || null,
+          body: body.trim(),
+        }),
+      });
+      setMessage('Message sent successfully');
+      onClose();
+    } catch (err) {
+      setMessage(err.message || 'Failed to send message');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
+        <div className="modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <MessageSquare size={20} color="#176b87" />
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Send Message</h2>
+          </div>
+          <button className="ghost" onClick={onClose} style={{ minHeight: 'auto', padding: '6px', borderRadius: '50%' }}>
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleSend}>
+          <div className="modal-body">
+            <div style={{ marginBottom: '12px', padding: '10px 14px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>TO:</span>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginLeft: '8px' }}>
+                {recipient.full_name || recipient.username || recipient.email}
+              </span>
+              {complaint && (
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                  Re: {complaint.title}
+                </div>
+              )}
+            </div>
+            <input
+              type="text"
+              placeholder="Subject (optional)"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '12px', fontSize: '14px' }}
+            />
+            <textarea
+              placeholder="Type your message..."
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              required
+              rows={5}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px', resize: 'vertical' }}
+            />
+          </div>
+          <div className="modal-footer">
+            <button
+              type="submit"
+              disabled={sending}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#176b87' }}
+            >
+              <Send size={15} /> {sending ? 'Sending...' : 'Send Message'}
+            </button>
+            <button type="button" className="ghost" onClick={onClose}>Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Messages Inbox Component ─────────────────────────────────────────────────
+function MessagesInbox({ api, setMessage }) {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeView, setActiveView] = useState('inbox'); // 'inbox' | 'sent'
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchMessages();
+  }, [activeView]);
+
+  async function fetchMessages() {
+    setLoading(true);
+    setError('');
+    try {
+      const endpoint = activeView === 'inbox' ? '/messages/inbox' : '/messages/sent';
+      const data = await api(endpoint);
+      setMessages(data);
+    } catch (err) {
+      setError(err.message || 'Failed to load messages');
+      setMessages([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function markAsRead(msg) {
+    if (msg.is_read || activeView === 'sent') return;
+    try {
+      await api(`/messages/${msg.id}/read`, { method: 'PATCH' });
+      setMessages((prev) => prev.map((m) => m.id === msg.id ? { ...m, is_read: true } : m));
+    } catch {
+      // silent fail
+    }
+  }
+
+  function handleSelectMessage(msg) {
+    setSelectedMessage(msg);
+    markAsRead(msg);
+  }
+
+  if (loading) {
+    return <p className="helper" style={{ padding: '24px 0' }}>Loading messages...</p>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '24px', textAlign: 'center' }}>
+        <p style={{ color: '#e11d48', marginBottom: '12px' }}>{error}</p>
+        <button className="ghost" onClick={fetchMessages}>Retry</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '16px', minHeight: '400px' }}>
+      {/* Sidebar */}
+      <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '12px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+          <button
+            className={`tab${activeView === 'inbox' ? ' active' : ''}`}
+            onClick={() => { setActiveView('inbox'); setSelectedMessage(null); }}
+            style={{ flex: 1, justifyContent: 'center' }}
+          >
+            <Mail size={14} style={{ marginRight: '4px' }} /> Inbox
+          </button>
+          <button
+            className={`tab${activeView === 'sent' ? ' active' : ''}`}
+            onClick={() => { setActiveView('sent'); setSelectedMessage(null); }}
+            style={{ flex: 1, justifyContent: 'center' }}
+          >
+            <Send size={14} style={{ marginRight: '4px' }} /> Sent
+          </button>
+        </div>
+        <div style={{ overflowY: 'auto', maxHeight: '500px' }}>
+          {messages.length === 0 ? (
+            <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', padding: '12px' }}>
+              No messages {activeView === 'inbox' ? 'received' : 'sent'} yet.
+            </p>
+          ) : (
+            messages.map((msg) => (
+              <button
+                key={msg.id}
+                onClick={() => handleSelectMessage(msg)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '12px', marginBottom: '6px',
+                  backgroundColor: selectedMessage?.id === msg.id ? '#e0f2fe' : msg.is_read || activeView === 'sent' ? '#ffffff' : '#f0f9ff',
+                  border: `1px solid ${selectedMessage?.id === msg.id ? '#0ea5e9' : '#e2e8f0'}`,
+                  borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{activeView === 'inbox' ? msg.sender_name : msg.recipient_name}</span>
+                  {!msg.is_read && activeView === 'inbox' && (
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0ea5e9', display: 'inline-block' }} />
+                  )}
+                </div>
+                <div style={{ fontSize: '12px', color: '#475569', fontWeight: msg.is_read || activeView === 'sent' ? 400 : 600 }}>
+                  {msg.subject}
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                  {new Date(msg.created_at).toLocaleDateString()} {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Message Detail */}
+      <div style={{ padding: '12px' }}>
+        {selectedMessage ? (
+          <div>
+            <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '16px' }}>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 700 }}>{selectedMessage.subject}</h3>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                <span style={{ fontWeight: 600 }}>From:</span> {selectedMessage.sender_name} &lt;{selectedMessage.sender_id}&gt;
+              </div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                <span style={{ fontWeight: 600 }}>To:</span> {selectedMessage.recipient_name}
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                {new Date(selectedMessage.created_at).toLocaleString()}
+              </div>
+            </div>
+            <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#334155', whiteSpace: 'pre-wrap' }}>
+              {selectedMessage.body}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
+            <p>Select a message to view</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export function MyProfile() {
   const { session, cases, stats, setMessage, api, load, logout } = useAuth();
   const [usersList, setUsersList] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [studentProfiles, setStudentProfiles] = useState([]);
-  const [activeTab, setActiveTab] = useState('grievances'); // 'grievances' | 'my-info'
+  const [activeTab, setActiveTab] = useState('grievances'); // 'grievances' | 'my-info' | 'messages'
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [messageRecipient, setMessageRecipient] = useState(null); // { user, complaint }
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
   function handleSignOut() {
@@ -341,7 +572,17 @@ export function MyProfile() {
     if (session?.role === 'admin') {
       fetchAdminData();
     }
+    fetchUnreadCount();
   }, [session]);
+
+  async function fetchUnreadCount() {
+    try {
+      const data = await api('/messages/unread-count');
+      setUnreadCount(data.unread_count);
+    } catch {
+      setUnreadCount(0);
+    }
+  }
 
   async function fetchAdminData() {
     try {
@@ -466,6 +707,43 @@ export function MyProfile() {
             <UserIcon size={15} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
             My Info
           </button>
+          <button
+            className={`tab${activeTab === 'messages' ? ' active' : ''}`}
+            onClick={() => setActiveTab('messages')}
+          >
+            <Mail size={15} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Messages
+            {unreadCount > 0 && (
+              <span style={{ marginLeft: '6px', backgroundColor: '#e11d48', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '2px 6px', borderRadius: '10px' }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Tab Bar for non-students */}
+      {session.role !== 'student' && (
+        <div className="tab-bar">
+          <button
+            className={`tab${activeTab === 'grievances' ? ' active' : ''}`}
+            onClick={() => setActiveTab('grievances')}
+          >
+            <Shield size={15} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            {session.role === 'admin' ? 'All Cases' : 'Department Queue'}
+          </button>
+          <button
+            className={`tab${activeTab === 'messages' ? ' active' : ''}`}
+            onClick={() => setActiveTab('messages')}
+          >
+            <Mail size={15} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Messages
+            {unreadCount > 0 && (
+              <span style={{ marginLeft: '6px', backgroundColor: '#e11d48', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '2px 6px', borderRadius: '10px' }}>
+                {unreadCount}
+              </span>
+            )}
+          </button>
         </div>
       )}
 
@@ -473,6 +751,17 @@ export function MyProfile() {
       {session.role === 'student' && activeTab === 'my-info' && (
         <div style={{ padding: '24px clamp(18px, 4vw, 48px)' }}>
           <StudentInfoTab api={api} setMessage={setMessage} />
+        </div>
+      )}
+
+      {/* ── Messages Tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'messages' && (
+        <div style={{ padding: '24px clamp(18px, 4vw, 48px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+            <Mail size={22} color="#176b87" />
+            <h2 style={{ margin: 0 }}>Messages</h2>
+          </div>
+          <MessagesInbox api={api} setMessage={setMessage} />
         </div>
       )}
 
@@ -632,9 +921,27 @@ export function MyProfile() {
 
               {/* Submitter Info Card (Who sent this complaint) */}
               <div className="submitter-card">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0d9488', fontWeight: 700, fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
-                  <UserCheck size={18} />
-                  <span>Submitter Profile &amp; Academic Identity</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', color: '#0d9488', fontWeight: 700, fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserCheck size={18} />
+                    <span>Submitter Profile &amp; Academic Identity</span>
+                  </div>
+                  {session.role !== 'student' && selectedComplaint.student_id && (
+                    <button
+                      className="ghost"
+                      onClick={() => setMessageRecipient({
+                        user: {
+                          id: selectedComplaint.student_id,
+                          full_name: selectedComplaint.student_name,
+                          email: selectedComplaint.student_email,
+                        },
+                        complaint: selectedComplaint,
+                      })}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', padding: '4px 10px' }}
+                    >
+                      <MessageSquare size={14} /> Message
+                    </button>
+                  )}
                 </div>
                 <div className="info-grid">
                   <span className="info-label">Full Name:</span>
@@ -713,6 +1020,17 @@ export function MyProfile() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Message Modal ─────────────────────────────────────────────────── */}
+      {messageRecipient && (
+        <MessageModal
+          recipient={messageRecipient.user}
+          complaint={messageRecipient.complaint}
+          api={api}
+          setMessage={setMessage}
+          onClose={() => setMessageRecipient(null)}
+        />
       )}
 
       {/* ── Admin Panel ─────────────────────────────────────────────────── */}

@@ -272,3 +272,36 @@ class Comment(Base):
     def author_role(self) -> str:
         return self.author.role if self.author else "unknown"
 
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    recipient_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    complaint_id: Mapped[str | None] = mapped_column(ForeignKey("complaints.id"), index=True, nullable=True)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False, default="No Subject")
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    sender: Mapped[User] = relationship(foreign_keys=[sender_id])
+    recipient: Mapped[User] = relationship(foreign_keys=[recipient_id])
+    complaint: Mapped[Complaint | None] = relationship()
+
+    @property
+    def sender_name(self) -> str:
+        if self.sender and self.sender.student_profile:
+            return self.sender.student_profile.full_name
+        if self.sender:
+            return self.sender.username or self.sender.email
+        return "Unknown"
+
+    @property
+    def recipient_name(self) -> str:
+        if self.recipient and self.recipient.student_profile:
+            return self.recipient.student_profile.full_name
+        if self.recipient:
+            return self.recipient.username or self.recipient.email
+        return "Unknown"
+

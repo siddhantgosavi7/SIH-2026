@@ -224,5 +224,27 @@ class CommentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MessageCreate(BaseModel):
+    recipient_id: int
+    complaint_id: str | None = None
+    subject: str | None = None
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class MessageOut(BaseModel):
+    id: int
+    sender_id: int
+    sender_name: str
+    recipient_id: int
+    recipient_name: str
+    complaint_id: str | None
+    subject: str
+    body: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # Resolve forward reference: UserOut.student_profile references StudentProfileOut defined below
 UserOut.model_rebuild()
