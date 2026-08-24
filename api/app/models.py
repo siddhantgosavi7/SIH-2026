@@ -246,3 +246,29 @@ class ComplaintEmbedding(Base):
     complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.id"), unique=True, nullable=False)
     embedding: Mapped[list[float]] = mapped_column(VectorType(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class Comment(Base):
+    __tablename__ = "complaint_comments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    complaint_id: Mapped[str] = mapped_column(ForeignKey("complaints.id"), index=True, nullable=False)
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    author: Mapped[User] = relationship()
+    complaint: Mapped[Complaint] = relationship()
+
+    @property
+    def author_name(self) -> str:
+        if self.author and self.author.student_profile:
+            return self.author.student_profile.full_name
+        if self.author:
+            return self.author.username or self.author.email
+        return "Unknown"
+
+    @property
+    def author_role(self) -> str:
+        return self.author.role if self.author else "unknown"
+

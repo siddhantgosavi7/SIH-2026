@@ -100,16 +100,20 @@ header p,
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 24px;
   padding: 24px clamp(18px, 4vw, 48px);
+}
+
+.layout.single {
+  grid-template-columns: 1fr;
 }
 
 .panel {
   background: white;
   border: 1px solid #d8e0e7;
-  border-radius: 8px;
-  padding: 18px;
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .login {
@@ -163,23 +167,32 @@ textarea {
 .form {
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: 16px;
 }
 
 .cases {
   display: grid;
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: stretch;
 }
 
 .case {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  gap: 12px;
-  align-items: center;
+  gap: 14px;
   border: 1px solid #d8e0e7;
-  border-radius: 8px;
-  padding: 14px;
-  background: #fbfdff;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.case:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .case span {

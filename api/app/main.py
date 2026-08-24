@@ -15,13 +15,15 @@ from app.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
 from app.intelligence import analyze_complaint
 from app.logging_config import configure_logging
-from app.models import Attachment, AuditLog, Complaint, ComplaintStatus, DepartmentPolicy, Notification, Role, StudentProfile, User, utcnow
+from app.models import Attachment, AuditLog, Comment, Complaint, ComplaintStatus, DepartmentPolicy, Notification, Role, StudentProfile, User, utcnow
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
 from app.schemas import (
     AttachmentOut,
     AssignmentRequest,
     AuditEventOut,
+    CommentCreate,
+    CommentOut,
     ComplaintCreate,
     ComplaintOut,
     ComplaintTransition,
@@ -758,3 +760,55 @@ def nudge_department(
 def run_sla_check(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     require_role(current, Role.admin)
     return {"escalated": check_slas(db)}
+
+
+# ── Comment / Message endpoints ──────────────────────────────────────────────
+
+@app.get("/complaints/{complaint_id}/comments", response_model=list[CommentOut])
+def list_comments(
+    complaint_id: str,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all comments/messages on a complaint. Visible to the student who filed it, assigned staff, and admins."""
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    comments = (
+        db.query(Comment)
+        .options(joinedload(Comment.author).joinedload(User.student_profile))
+        .filter(Comment.complaint_id == complaint_id)
+        .order_by(Comment.created_at.asc())
+        .all()
+    )
+    return comments
+
+
+@app.post("/complaints/{complaint_id}/comments", response_model=CommentOut, status_code=status.HTTP_201_CREATED)
+def create_comment(
+    complaint_id: str,
+    payload: CommentCreate,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Post a comment/message on a complaint. Students, staff, dept heads, and admins can comment."""
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    comment = Comment(
+        complaint_id=complaint_id,
+        author_id=current.id,
+        body=payload.body,
+    )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    # Eagerly load author for response serialization
+    db.refresh(comment, attribute_names=["author"])
+    if comment.author:
+        _ = comment.author.student_profile  # trigger lazy load
+    write_audit(db, current, "comment.created", "comment", str(comment.id), {"complaint_id": complaint_id})
+    db.commit()
+    return comment

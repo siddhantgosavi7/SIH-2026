@@ -478,7 +478,7 @@ export function MyProfile() {
 
       {/* ── My Grievances Tab (+ non-student views) ─────────────────────── */}
       {(session.role !== 'student' || activeTab === 'grievances') && (
-        <section className="layout">
+        <section className={`layout ${session.role !== 'student' ? 'single' : ''}`}>
           {session.role === 'student' && (
             <form className="panel form" onSubmit={createComplaint}>
               <ClipboardList size={22} />

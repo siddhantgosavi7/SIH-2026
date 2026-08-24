@@ -276,7 +276,7 @@ export default function DepartmentDashboard() {
               <p className="text-sm font-semibold text-slate-700">No pending complaints in {deptName} queue!</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {queue.map((item) => {
                 const isOverdue = new Date(item.sla_due_at) < new Date() && item.status !== "resolved" && item.status !== "closed";
                 const hasNudge = adminNudges.some((n) => n.complaint_id === item.id);

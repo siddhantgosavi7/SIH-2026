@@ -208,5 +208,21 @@ class StudentProfileAdminOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CommentCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class CommentOut(BaseModel):
+    id: int
+    complaint_id: str
+    author_id: int
+    author_name: str
+    author_role: str
+    body: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # Resolve forward reference: UserOut.student_profile references StudentProfileOut defined below
 UserOut.model_rebuild()
