@@ -88,7 +88,7 @@ const benchmarkDataMap = {
 };
 
 export function Home() {
-  const { token, logout } = useAuth();
+  const { token, session, logout } = useAuth();
   const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState('Hostel');
@@ -163,7 +163,11 @@ export function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {token ? (
               <>
-                <Link to="/myProfile" title="My Profile" style={{ display: 'flex', alignItems: 'center', color: '#3D4FFF' }}>
+                <Link
+                  to={session?.role === 'admin' ? '/admin' : '/myProfile'}
+                  title={session?.role === 'admin' ? 'Admin Dashboard' : 'My Profile'}
+                  style={{ display: 'flex', alignItems: 'center', color: '#3D4FFF' }}
+                >
                   <User size={24} />
                 </Link>
                 <button className="ghost" onClick={logout} style={{ minHeight: '36px', padding: '0 12px', fontSize: '13px' }}>

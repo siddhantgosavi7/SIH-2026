@@ -4,7 +4,7 @@ import { User, Lock, Compass } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Login() {
-  const { token, setToken, setSession, message, setMessage, api } = useAuth();
+  const { token, session, setToken, setSession, message, setMessage, api } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,9 +13,13 @@ export function Login() {
 
   useEffect(() => {
     if (token) {
-      navigate('/', { replace: true });
+      if (session?.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/myProfile', { replace: true });
+      }
     }
-  }, [token, navigate]);
+  }, [token, session, navigate]);
 
   async function login(event) {
     event.preventDefault();
@@ -43,7 +47,11 @@ export function Login() {
         setToken(data.access_token);
         setSession(data);
         setMessage('Welcome back to GIOP!');
-        navigate('/');
+        if (data.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/myProfile');
+        }
         return;
       } catch (backendErr) {
         if (backendErr.message === 'Failed to fetch' || backendErr.message?.includes('fetch')) {
@@ -59,7 +67,11 @@ export function Login() {
           setToken(sessionData.access_token);
           setSession(sessionData);
           setMessage('Welcome back to GIOP!');
-          navigate('/');
+          if (sessionData.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/myProfile');
+          }
           return;
         }
         throw backendErr;
