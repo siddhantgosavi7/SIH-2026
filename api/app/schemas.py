@@ -26,7 +26,7 @@ class StudentRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
 
-    model_config = {"extra": "ignore"}
+    model_config = {"extra": "forbid"}
 
 
 class UserCreate(BaseModel):
@@ -123,6 +123,27 @@ class QueueStats(BaseModel):
     in_progress: int = 0
     escalated: int = 0
     resolved: int = 0
+
+
+class DepartmentOut(BaseModel):
+    name: str
+    category: str = "General"
+    active: bool = True
+
+    model_config = {"from_attributes": True}
+
+
+class DepartmentOverview(BaseModel):
+    department: str
+    total: int = 0
+    open: int = 0
+    in_progress: int = 0
+    resolved: int = 0
+    overdue: int = 0
+
+
+class NudgeRequest(BaseModel):
+    message: str | None = None
 
 
 class AuditEventOut(BaseModel):

@@ -38,7 +38,13 @@ export default function LoginPage() {
         const data = await res.json();
         localStorage.setItem("token", data.access_token);
         localStorage.setItem("session", JSON.stringify(data));
-        router.push("/");
+        if (data.role === "admin") {
+          router.push("/admin");
+        } else if (data.role === "staff" || data.role === "department_head") {
+          router.push("/department");
+        } else {
+          router.push("/");
+        }
         return;
       } else {
         const data = await res.json().catch(() => ({}));
@@ -48,12 +54,16 @@ export default function LoginPage() {
       if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
         // Fallback only when backend API server is offline
         const isAdmin = cleanUsername === "admin" && password === "admin@123";
+        const isStaff = cleanUsername.includes("staff");
+        const role = isAdmin ? "admin" : isStaff ? "staff" : "student";
         localStorage.setItem("token", "demo-offline-token");
         localStorage.setItem(
           "session",
-          JSON.stringify({ role: isAdmin ? "admin" : "student", username: cleanUsername })
+          JSON.stringify({ role, username: cleanUsername, department: isStaff ? "Hostel" : null })
         );
-        router.push("/");
+        if (role === "admin") router.push("/admin");
+        else if (role === "staff") router.push("/department");
+        else router.push("/");
         return;
       }
       setErrorMessage(err.message || "Invalid username or password");

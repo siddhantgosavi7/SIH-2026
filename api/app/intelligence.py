@@ -39,11 +39,16 @@ def analyze_complaint(db: Session, complaint: Complaint) -> None:
     ranked = sorted(((sum(keyword.lower() in text_tokens for keyword in policy.keywords), policy) for policy in policies), key=lambda item: item[0], reverse=True)
     matches, policy = ranked[0] if ranked else (0, None)
     if policy and matches:
-        complaint.department, complaint.category = policy.name, policy.category
+        if not complaint.department or complaint.department == "General Review":
+            complaint.department = policy.name
+        complaint.category = policy.category
         complaint.classification_confidence = round(min(0.95, 0.45 + matches * 0.2), 2)
         complaint.sla_due_at = utcnow() + timedelta(hours=policy.sla_hours)
     else:
-        complaint.department, complaint.category, complaint.classification_confidence = "General Review", "General", 0.25
+        if not complaint.department:
+            complaint.department = "General Review"
+        complaint.category = "General"
+        complaint.classification_confidence = 0.25
 
     urgent_terms = {"unsafe", "harassment", "threat", "medical", "violence", "fire"}
     high_terms = {"exam", "water", "electricity", "broken", "fee", "urgent"}

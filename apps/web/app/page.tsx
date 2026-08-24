@@ -116,7 +116,6 @@ function Reveal({
 }
 
 export default function Home() {
-
   const [activeTab, setActiveTab] =
     useState<keyof typeof benchmarkData>("priority");
 
@@ -125,16 +124,109 @@ export default function Home() {
   );
 
   const [analyzed, setAnalyzed] = useState(false);
-
   const [mobileMenu, setMobileMenu] = useState(false);
-
   const bars = benchmarkData[activeTab];
-
   const router = useRouter();
-    const handleRedirect = () => {
+
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const defaultDepts = ["Hostel", "CSE", "AIML", "CSBS", "Mechanical", "Electrical", "ENTC", "Biotech", "Exam Cell", "Canteen"];
+
+  const [session, setSession] = useState<any>(null);
+  const [departments, setDepartments] = useState<string[]>(defaultDepts);
+  const [selectedDept, setSelectedDept] = useState<string>("Hostel");
+  const [complaintTitle, setComplaintTitle] = useState<string>("");
+  const [complaintDescription, setComplaintDescription] = useState<string>("");
+  const [complaintPriority, setComplaintPriority] = useState<string>("normal");
+  const [studentComplaints, setStudentComplaints] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const sessionStr = localStorage.getItem("session");
+    if (sessionStr) {
+      try {
+        const sessionObj = JSON.parse(sessionStr);
+        setSession(sessionObj);
+        if (sessionObj.role === "admin") {
+          router.push("/admin");
+          return;
+        } else if (sessionObj.role === "staff" || sessionObj.role === "department_head") {
+          router.push("/department");
+          return;
+        }
+      } catch {}
+    }
+
+    // Fetch dynamic departments from API
+    fetch(`${apiBase}/departments`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const names = data.map((d: any) => (typeof d === "string" ? d : d.name));
+          setDepartments(names);
+          if (names.length > 0) setSelectedDept(names[0]);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch student complaint history if logged in
+    if (token) {
+      fetch(`${apiBase}/complaints`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => {
+          if (Array.isArray(data)) setStudentComplaints(data);
+        })
+        .catch(() => {});
+    }
+  }, [router, apiBase]);
+
+  async function handleComplaintSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${apiBase}/complaints`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: complaintTitle,
+          description: complaintDescription,
+          department: selectedDept,
+          priority: complaintPriority,
+        }),
+      });
+
+      if (res.ok) {
+        const created = await res.json();
+        setStudentComplaints((prev) => [created, ...prev]);
+        setComplaintTitle("");
+        setComplaintDescription("");
+        setToastMsg(`Complaint submitted successfully to ${selectedDept} department!`);
+        setTimeout(() => setToastMsg(null), 4000);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.detail || "Failed to submit complaint.");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const handleRedirect = () => {
     router.push('/signup');
-    console.log("To Signup");
-    
   };
   return (
     <main className="site">
@@ -450,6 +542,134 @@ export default function Home() {
             <Arrow />
           </article>
         </Reveal>
+
+        {/* STUDENT COMPLAINT FILING FORM & HISTORY */}
+        <section id="file-complaint" className="max-w-4xl mx-auto my-16 p-6 sm:p-10 bg-white rounded-3xl border border-slate-200 shadow-xl text-left">
+          {toastMsg && (
+            <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between">
+              <span>{toastMsg}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 pb-4 border-b border-slate-100">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                File an Institutional Complaint
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Select your target department from the official list below. Your grievance will be routed directly to that department's active queue.
+              </p>
+            </div>
+            <span className="self-start sm:self-auto px-3 py-1 bg-blue-50 text-[#3948e8] text-xs font-bold rounded-full border border-blue-100">
+              DIRECT DEPT ROUTING
+            </span>
+          </div>
+
+          <form onSubmit={handleComplaintSubmit} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Target Department *
+                </label>
+                <select
+                  value={selectedDept}
+                  onChange={(e) => setSelectedDept(e.target.value)}
+                  className="w-full text-xs font-bold p-3.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-[#3948e8] focus:border-transparent outline-none transition"
+                >
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept} Department
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Priority Level *
+                </label>
+                <select
+                  value={complaintPriority}
+                  onChange={(e) => setComplaintPriority(e.target.value)}
+                  className="w-full text-xs font-bold p-3.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-[#3948e8] focus:border-transparent outline-none transition"
+                >
+                  <option value="normal">Normal Priority (Default)</option>
+                  <option value="high">High Priority</option>
+                  <option value="urgent">Urgent / Safety Risk</option>
+                  <option value="low">Low Priority</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Complaint Subject / Title *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Brief summary (e.g. Water outage in Hostel Block A)"
+                value={complaintTitle}
+                onChange={(e) => setComplaintTitle(e.target.value)}
+                className="w-full text-xs font-medium p-3.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-[#3948e8] focus:border-transparent outline-none transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                Detailed Description *
+              </label>
+              <textarea
+                required
+                rows={4}
+                placeholder="Provide complete details, affected room numbers, dates, or specific issue info..."
+                value={complaintDescription}
+                onChange={(e) => setComplaintDescription(e.target.value)}
+                className="w-full text-xs font-medium p-3.5 rounded-xl border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-[#3948e8] focus:border-transparent outline-none transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-4 bg-[#3948e8] hover:bg-[#2b37ca] text-white text-xs font-extrabold rounded-xl transition shadow-lg disabled:opacity-60 cursor-pointer"
+            >
+              {submitting ? "Routing to Department..." : `Submit Complaint to ${selectedDept} Queue`}
+            </button>
+          </form>
+
+          {/* Student's Live Complaint History */}
+          {studentComplaints.length > 0 && (
+            <div className="mt-10 pt-8 border-t border-slate-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-extrabold text-sm text-slate-900">My Submitted Complaints ({studentComplaints.length})</h3>
+                <span className="text-[11px] text-slate-400 font-medium">Live Server Records</span>
+              </div>
+              <div className="space-y-3">
+                {studentComplaints.map((item) => (
+                  <div key={item.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-[11px] font-bold text-slate-400">{item.id.substring(0, 8)}...</span>
+                        <span className="px-2.5 py-0.5 bg-blue-100 text-[#3948e8] text-[10px] font-extrabold rounded-full">
+                          {item.department}
+                        </span>
+                        <span className="px-2.5 py-0.5 bg-slate-200 text-slate-800 text-[10px] font-extrabold rounded-full uppercase">
+                          {item.status.replace("_", " ")}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">{item.title}</h4>
+                      <p className="text-xs text-slate-600 line-clamp-1">{item.description}</p>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-mono whitespace-nowrap self-end sm:self-center">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
       </section>
 
       {/* INCIDENT ENGINE */}

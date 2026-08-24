@@ -1,3 +1,4 @@
+from datetime import timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -14,7 +15,7 @@ from app.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
 from app.intelligence import analyze_complaint
 from app.logging_config import configure_logging
-from app.models import Attachment, AuditLog, Complaint, ComplaintStatus, Notification, Role, StudentProfile, User, utcnow
+from app.models import Attachment, AuditLog, Complaint, ComplaintStatus, DepartmentPolicy, Notification, Role, StudentProfile, User, utcnow
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
 from app.schemas import (
@@ -24,8 +25,11 @@ from app.schemas import (
     ComplaintCreate,
     ComplaintOut,
     ComplaintTransition,
+    DepartmentOut,
+    DepartmentOverview,
     LoginIn,
     NotificationOut,
+    NudgeRequest,
     QueueStats,
     ReopenRequest,
     StudentProfileIn,
@@ -38,6 +42,19 @@ from app.schemas import (
 )
 from app.security import create_access_token, hash_password, verify_password
 from app.tasks import check_slas, enqueue_ai_processing
+
+DEPARTMENTS = [
+    "Hostel",
+    "CSE",
+    "AIML",
+    "CSBS",
+    "Mechanical",
+    "Electrical",
+    "ENTC",
+    "Biotech",
+    "Exam Cell",
+    "Canteen",
+]
 
 ALLOWED_ATTACHMENT_TYPES = {"application/pdf", "image/jpeg", "image/png", "text/plain"}
 TRANSITIONS = {
@@ -84,6 +101,23 @@ def bootstrap_admin(db: Session) -> None:
     elif not existing.username:
         existing.username = "admin"
         db.commit()
+
+
+def bootstrap_departments(db: Session) -> None:
+    for dept in DEPARTMENTS:
+        existing = db.query(DepartmentPolicy).filter(DepartmentPolicy.name == dept).first()
+        if not existing:
+            db.add(DepartmentPolicy(name=dept, category=dept, active=True))
+    db.commit()
+
+
+@app.get("/departments", response_model=list[DepartmentOut])
+def list_departments(db: Session = Depends(get_db)) -> list[dict]:
+    bootstrap_departments(db)
+    policies = db.query(DepartmentPolicy).filter(DepartmentPolicy.active == True).all()
+    if not policies:
+        return [{"name": dept, "category": dept, "active": True} for dept in DEPARTMENTS]
+    return [{"name": p.name, "category": p.category, "active": p.active} for p in policies]
 
 
 @app.get("/health/live")
@@ -290,6 +324,15 @@ async def create_complaint(
     db: Session = Depends(get_db),
 ):
     require_role(current, Role.student, Role.admin)
+
+    # Validate department against seeded list
+    dept = payload.department or "Hostel"
+    if dept not in DEPARTMENTS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid department '{payload.department}'. Must be one of: {', '.join(DEPARTMENTS)}"
+        )
+
     body_hash = await request_hash(request)
     if idempotency_key:
         existing = get_existing(db, current, idempotency_key, request.method, request.url.path, body_hash)
@@ -298,7 +341,7 @@ async def create_complaint(
     complaint = Complaint(
         id=str(uuid4()),
         student_id=current.id,
-        department=payload.department or "General Review",
+        department=dept,
         title=payload.title,
         description=payload.description,
         priority=payload.priority.value,
@@ -319,12 +362,18 @@ async def create_complaint(
 
 
 @app.get("/complaints", response_model=list[ComplaintOut])
-def list_complaints(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[Complaint]:
+def list_complaints(
+    department: str | None = None,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> list[Complaint]:
     query = db.query(Complaint).filter(Complaint.deleted_at.is_(None)).order_by(Complaint.created_at.desc())
     if current.role == Role.student.value:
         query = query.filter(Complaint.student_id == current.id)
     elif current.role in {Role.staff.value, Role.department_head.value}:
         query = query.filter(Complaint.department == current.department)
+    elif current.role == Role.admin.value and department:
+        query = query.filter(Complaint.department == department)
     return query.all()
 
 
@@ -524,6 +573,144 @@ def list_notifications(current: User = Depends(get_current_user), db: Session = 
             Complaint.department == current.department
         )
     return query.limit(100).all()
+
+
+@app.get("/admin/departments/overview", response_model=list[DepartmentOverview])
+def get_departments_overview(
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> list[DepartmentOverview]:
+    require_role(current, Role.admin)
+    now = utcnow()
+    complaints = db.query(Complaint).filter(Complaint.deleted_at.is_(None)).all()
+
+    dept_stats: dict[str, DepartmentOverview] = {
+        dept: DepartmentOverview(department=dept) for dept in DEPARTMENTS
+    }
+
+    for c in complaints:
+        dept = c.department
+        if dept not in dept_stats:
+            dept_stats[dept] = DepartmentOverview(department=dept)
+
+        stats = dept_stats[dept]
+        stats.total += 1
+
+        if c.status == ComplaintStatus.open.value:
+            stats.open += 1
+        elif c.status == ComplaintStatus.in_progress.value:
+            stats.in_progress += 1
+        elif c.status in {ComplaintStatus.resolved.value, ComplaintStatus.closed.value}:
+            stats.resolved += 1
+
+        if c.status not in {ComplaintStatus.resolved.value, ComplaintStatus.closed.value} and c.sla_due_at:
+            due = c.sla_due_at if c.sla_due_at.tzinfo else c.sla_due_at.replace(tzinfo=timezone.utc)
+            if due < now:
+                stats.overdue += 1
+
+    return list(dept_stats.values())
+
+
+@app.post("/admin/complaints/{complaint_id}/nudge")
+def nudge_complaint(
+    complaint_id: str,
+    payload: NudgeRequest | None = None,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    require_role(current, Role.admin)
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+
+    msg = (payload and payload.message) or f"ADMIN EXPEDITE REQUEST: Immediate action required for complaint {complaint.id} ({complaint.title})."
+
+    write_audit(
+        db, current, "admin.nudge", "complaint", complaint.id,
+        {"department": complaint.department, "title": complaint.title, "message": msg}
+    )
+
+    staff_users = db.query(User).filter(
+        User.department == complaint.department,
+        User.role.in_([Role.staff.value, Role.department_head.value])
+    ).all()
+
+    if staff_users:
+        for u in staff_users:
+            db.add(Notification(
+                user_id=u.id,
+                complaint_id=complaint.id,
+                channel="nudge",
+                recipient=u.email,
+                subject=f"⚠️ URGENT NUDGE: Complaint {complaint.id}",
+                body=msg,
+            ))
+    else:
+        db.add(Notification(
+            user_id=None,
+            complaint_id=complaint.id,
+            channel="nudge",
+            recipient=f"{complaint.department}@institution.edu",
+            subject=f"⚠️ URGENT NUDGE: Complaint {complaint.id}",
+            body=msg,
+        ))
+
+    db.commit()
+    return {"status": "success", "message": "Nudge sent successfully", "complaint_id": complaint.id}
+
+
+@app.post("/admin/departments/{department_name}/nudge")
+def nudge_department(
+    department_name: str,
+    payload: NudgeRequest | None = None,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    require_role(current, Role.admin)
+    if department_name not in DEPARTMENTS:
+        raise HTTPException(status_code=404, detail=f"Department '{department_name}' not found")
+
+    msg = (payload and payload.message) or f"ADMIN EXPEDITE REQUEST: Please clear pending open/in-progress queue for {department_name} department."
+
+    write_audit(
+        db, current, "admin.department_nudge", "department", department_name,
+        {"department": department_name, "message": msg}
+    )
+
+    staff_users = db.query(User).filter(
+        User.department == department_name,
+        User.role.in_([Role.staff.value, Role.department_head.value])
+    ).all()
+
+    open_complaints = db.query(Complaint).filter(
+        Complaint.department == department_name,
+        Complaint.status.in_([ComplaintStatus.open.value, ComplaintStatus.in_progress.value]),
+        Complaint.deleted_at.is_(None)
+    ).all()
+
+    for c in open_complaints:
+        if staff_users:
+            for u in staff_users:
+                db.add(Notification(
+                    user_id=u.id,
+                    complaint_id=c.id,
+                    channel="nudge",
+                    recipient=u.email,
+                    subject=f"⚠️ URGENT QUEUE NUDGE: {department_name}",
+                    body=msg,
+                ))
+        else:
+            db.add(Notification(
+                user_id=None,
+                complaint_id=c.id,
+                channel="nudge",
+                recipient=f"{department_name}@institution.edu",
+                subject=f"⚠️ URGENT QUEUE NUDGE: {department_name}",
+                body=msg,
+            ))
+
+    db.commit()
+    return {"status": "success", "message": f"Nudge sent to {department_name}", "affected_complaints": len(open_complaints)}
 
 
 @app.post("/admin/sla-check")

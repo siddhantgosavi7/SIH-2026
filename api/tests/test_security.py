@@ -4,17 +4,17 @@ from tests.conftest import token
 def test_student_can_register_but_cannot_set_a_role(client):
     created = client.post(
         "/auth/register",
-        json={"email": "new.student@example.edu", "password": "StudentPass123!"},
+        json={"email": "new.student@example.edu", "username": "newstudent", "password": "StudentPass123!"},
     )
     assert created.status_code == 201, created.text
     assert created.json()["role"] == "student"
     assert client.post(
         "/auth/register",
-        json={"email": "new.student@example.edu", "password": "StudentPass123!"},
+        json={"email": "new.student@example.edu", "username": "newstudent", "password": "StudentPass123!"},
     ).status_code == 409
     assert client.post(
         "/auth/register",
-        json={"email": "bad@example.edu", "password": "StudentPass123!", "role": "admin"},
+        json={"email": "bad@example.edu", "username": "baduser", "password": "StudentPass123!", "role": "admin"},
     ).status_code == 422
 
 

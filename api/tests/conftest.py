@@ -27,10 +27,10 @@ def db() -> Generator[Session, None, None]:
     session = TestingSessionLocal()
     session.add_all(
         [
-            User(email="student@example.edu", hashed_password=hash_password("password123"), role=Role.student.value, department=None),
-            User(email="other@example.edu", hashed_password=hash_password("password123"), role=Role.student.value, department=None),
-            User(email="hostel@example.edu", hashed_password=hash_password("password123"), role=Role.staff.value, department="Hostel"),
-            User(email="admin@example.edu", hashed_password=hash_password("password123"), role=Role.admin.value, department=None),
+            User(email="student@example.edu", username="student", hashed_password=hash_password("password123"), role=Role.student.value, department=None),
+            User(email="other@example.edu", username="other", hashed_password=hash_password("password123"), role=Role.student.value, department=None),
+            User(email="hostel@example.edu", username="hostel", hashed_password=hash_password("password123"), role=Role.staff.value, department="Hostel"),
+            User(email="admin@example.edu", username="admin", hashed_password=hash_password("password123"), role=Role.admin.value, department=None),
         ]
     )
     session.commit()
@@ -53,6 +53,7 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 
 
 def token(client: TestClient, email: str) -> str:
-    res = client.post("/auth/login", json={"email": email, "password": "password123"})
+    username = email.split("@")[0]
+    res = client.post("/auth/login", json={"username": username, "password": "password123"})
     assert res.status_code == 200, res.text
     return res.json()["access_token"]
