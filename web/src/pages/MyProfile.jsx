@@ -6,6 +6,7 @@ import {
   Eye, FileText, UserCheck, Clock, Calendar, AlertCircle, MessageSquare, Send, Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { AdminDashboard } from './AdminDashboard';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ACADEMIC_DEPARTMENTS = [
@@ -661,6 +662,10 @@ export function MyProfile() {
   }
 
   if (!session) return null;
+
+  if (session.role === 'admin') {
+    return <AdminDashboard />;
+  }
 
   return (
     <main className="app">
