@@ -164,7 +164,7 @@ export function Home() {
             {token ? (
               <>
                 <Link
-                  to={session?.role === 'admin' ? '/admin' : '/myProfile'}
+                  to="/dashboard"
                   title={session?.role === 'admin' ? 'Admin Dashboard' : 'My Profile'}
                   style={{ display: 'flex', alignItems: 'center', color: '#3D4FFF' }}
                 >

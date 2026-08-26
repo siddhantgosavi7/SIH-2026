@@ -9,12 +9,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.audit import write_audit
-from app.config import settings
+from app.core.config import settings
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.api.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
-from app.intelligence import analyze_complaint
-from app.logging_config import configure_logging
+from app.pipeline import analyze_complaint
+from app.core.logging import configure_logging
 from app.models import Attachment, AuditLog, Comment, Complaint, ComplaintStatus, DepartmentPolicy, Message, Notification, Role, StudentProfile, User, utcnow
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
@@ -44,8 +44,9 @@ from app.schemas import (
     UserCreate,
     UserOut,
 )
-from app.security import create_access_token, hash_password, verify_password
-from app.tasks import check_slas, enqueue_ai_processing
+from app.core.security import create_access_token, hash_password, verify_password
+from app.workers.queue import enqueue_ai_processing
+from app.workers.sla_tasks import check_slas
 
 DEPARTMENTS = [
     "Hostel",

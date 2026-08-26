@@ -9,6 +9,11 @@ import { MyProfile } from './pages/MyProfile';
 import { AdminDashboard } from './pages/AdminDashboard';
 import './styles.css';
 
+function DashboardEntry() {
+  const { session } = useAuth();
+  return <Navigate to={session?.role === 'admin' ? '/admin' : '/myProfile'} replace />;
+}
+
 function ToastContainer() {
   const { message, setMessage } = useAuth();
   if (!message) return null;
@@ -30,9 +35,17 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route
-            path="/admin"
+            path="/dashboard"
             element={
               <ProtectedRoute>
+                <DashboardEntry />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute role="admin">
                 <AdminDashboard />
               </ProtectedRoute>
             }

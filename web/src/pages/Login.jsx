@@ -50,7 +50,7 @@ export function Login() {
         if (data.role === 'admin') {
           navigate('/admin');
         } else {
-          navigate('/myProfile');
+          navigate('/dashboard');
         }
         return;
       } catch (backendErr) {
@@ -70,7 +70,7 @@ export function Login() {
           if (sessionData.role === 'admin') {
             navigate('/admin');
           } else {
-            navigate('/myProfile');
+            navigate('/dashboard');
           }
           return;
         }

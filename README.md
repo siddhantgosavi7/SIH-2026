@@ -15,6 +15,8 @@ Web: `http://localhost:5173`
 
 Docs: `http://localhost:8000/docs`
 
+The API package layout and complaint pipeline are documented in [api/ARCHITECTURE.md](api/ARCHITECTURE.md).
+
 Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `api/.env` before first boot. No demo credentials are hard-coded.
 
 The `worker` container runs the RQ queue and re-checks SLAs every
@@ -28,11 +30,20 @@ and `SMTP_FROM` are set; otherwise the notification is stored and readable at
 ```bash
 cd api
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+.venv\Scripts\activate       # Windows PowerShell
+# source .venv/bin/activate   # WSL/Linux
+python -m pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
+
+Do not install the API requirements into the system Python. On WSL/Linux, use
+`python3 -m venv .venv`, then `.venv/bin/python -m pip install -r requirements.txt`.
+In VS Code, select `api/.venv` as the Python interpreter so imports such as
+`fastapi` in `app/api/routes/dashboard.py` resolve correctly.
+
+The Docker image uses Python 3.12. Python 3.14 is also supported with the
+current SQLAlchemy constraint in `api/requirements.txt`.
 
 ## Test
 

@@ -7,7 +7,7 @@ from rq import Worker
 
 from app.config import settings
 from app.logging_config import configure_logging
-from app.tasks import check_slas
+from app.workers.sla_tasks import check_slas
 
 
 def sla_loop() -> None:
