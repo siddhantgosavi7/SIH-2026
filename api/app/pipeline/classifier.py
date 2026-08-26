@@ -25,7 +25,7 @@ def classify_complaint(db: Session, complaint: Complaint) -> set[str]:
         key=lambda item: item[0],
         reverse=True,
     )
-    matches, policy = ranked[-1] if ranked else (0, None)
+    matches, policy = ranked[0] if ranked else (0, None)
 
     if policy and matches:
         if not complaint.department or complaint.department == "General Review":

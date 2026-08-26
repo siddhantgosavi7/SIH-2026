@@ -40,6 +40,9 @@ from app.schemas import (
     StudentProfileOut,
     StudentProfileAdminOut,
     StudentRegister,
+    FeedbackIn,
+    SolutionIn,
+    SolutionOut,
     TokenOut,
     UserCreate,
     UserOut,
@@ -187,6 +190,11 @@ def login(payload: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
     return TokenOut(access_token=token, role=user.role, email=user.email, username=user.username, department=user.department)
 
 
+@app.get("/auth/me", response_model=UserOut)
+def auth_me(current: User = Depends(get_current_user)) -> User:
+    return current
+
+
 @app.post("/auth/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register_student(payload: StudentRegister, db: Session = Depends(get_db)) -> User:
     email = payload.email.lower().strip()
@@ -218,6 +226,85 @@ def register_student(payload: StudentRegister, db: Session = Depends(get_db)) ->
 def list_users(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[User]:
     require_role(current, Role.admin)
     return db.query(User).order_by(User.created_at.desc()).all()
+
+
+@app.get("/students/me/dashboard")
+def student_dashboard(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict[str, int]:
+    require_role(current, Role.student)
+    counts = dict(db.query(Complaint.status, func.count(Complaint.id)).filter(
+        Complaint.student_id == current.id,
+        Complaint.deleted_at.is_(None),
+    ).group_by(Complaint.status).all())
+    return {
+        "total": sum(counts.values()),
+        "open": counts.get(ComplaintStatus.open.value, 0),
+        "in_progress": counts.get(ComplaintStatus.in_progress.value, 0),
+        "resolved": counts.get(ComplaintStatus.resolved.value, 0),
+        "closed": counts.get(ComplaintStatus.closed.value, 0),
+        "escalated": counts.get(ComplaintStatus.escalated.value, 0),
+    }
+
+
+@app.get("/staff/dashboard", response_model=QueueStats)
+def staff_dashboard(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> QueueStats:
+    require_role(current, Role.staff, Role.department_head)
+    return department_dashboard(current, db)
+
+
+@app.get("/staff/complaints", response_model=list[ComplaintOut])
+def staff_complaints(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[Complaint]:
+    require_role(current, Role.staff, Role.department_head)
+    return list_complaints(None, current, db)
+
+
+@app.get("/admin/dashboard")
+def admin_dashboard(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict[str, int]:
+    require_role(current, Role.admin)
+    counts = dict(db.query(Complaint.status, func.count(Complaint.id)).filter(
+        Complaint.deleted_at.is_(None),
+    ).group_by(Complaint.status).all())
+    return {
+        "total": sum(counts.values()),
+        "open": counts.get(ComplaintStatus.open.value, 0),
+        "in_progress": counts.get(ComplaintStatus.in_progress.value, 0),
+        "resolved": counts.get(ComplaintStatus.resolved.value, 0),
+        "closed": counts.get(ComplaintStatus.closed.value, 0),
+        "escalated": counts.get(ComplaintStatus.escalated.value, 0),
+    }
+
+
+@app.get("/admin/complaints", response_model=list[ComplaintOut])
+def admin_complaints(department: str | None = None, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[Complaint]:
+    require_role(current, Role.admin)
+    return list_complaints(department, current, db)
+
+
+@app.get("/admin/staff", response_model=list[UserOut])
+def list_staff(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> list[User]:
+    require_role(current, Role.admin)
+    return db.query(User).filter(User.role.in_([Role.staff.value, Role.department_head.value])).order_by(User.department, User.username).all()
+
+
+@app.post("/admin/staff", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def create_staff(payload: UserCreate, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    require_role(current, Role.admin)
+    if not payload.department:
+        raise HTTPException(status_code=400, detail="staff must have a department")
+    if db.query(User).filter((func.lower(User.email) == payload.email.lower()) | (func.lower(User.username) == (payload.username or "").lower())).first():
+        raise HTTPException(status_code=409, detail="email or username already exists")
+    user = User(
+        email=payload.email.lower(),
+        username=payload.username.strip() if payload.username else None,
+        hashed_password=hash_password(payload.password),
+        role=Role.staff.value,
+        department=payload.department,
+    )
+    db.add(user)
+    db.flush()
+    write_audit(db, current, "staff.created", "user", str(user.id), {"department": user.department})
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @app.get("/admin/audit-logs", response_model=list[AuditEventOut])
@@ -339,6 +426,7 @@ def create_user(payload: UserCreate, current: User = Depends(get_current_user), 
         raise HTTPException(status_code=409, detail="email already exists")
     user = User(
         email=payload.email.lower(),
+        username=payload.username.strip() if payload.username else None,
         hashed_password=hash_password(payload.password),
         role=payload.role.value,
         department=payload.department,
@@ -361,18 +449,8 @@ async def create_complaint(
 ):
     require_role(current, Role.student, Role.admin)
 
-    # Require academic student profile for students before submitting grievance
-    if current.role == Role.student.value:
-        profile = db.query(StudentProfile).filter(StudentProfile.user_id == current.id).one_or_none()
-        if not profile or not profile.prn_number or not profile.full_name:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Please complete your Academic Profile in 'My Info' before submitting a grievance."
-            )
-
     # Validate department against seeded list
-    dept = payload.department or "Hostel"
-    if dept not in DEPARTMENTS:
+    if payload.department and payload.department not in DEPARTMENTS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid department '{payload.department}'. Must be one of: {', '.join(DEPARTMENTS)}"
@@ -386,7 +464,7 @@ async def create_complaint(
     complaint = Complaint(
         id=str(uuid4()),
         student_id=current.id,
-        department=dept,
+        department=payload.department or "",
         title=payload.title,
         description=payload.description,
         priority=payload.priority.value,
@@ -395,6 +473,13 @@ async def create_complaint(
     db.add(complaint)
     db.flush()
     analyze_complaint(db, complaint)
+    if not complaint.assigned_to_id:
+        assignee = db.query(User).filter(
+            User.department == complaint.department,
+            User.role.in_([Role.staff.value, Role.department_head.value]),
+        ).order_by(User.id).first()
+        if assignee:
+            complaint.assigned_to_id = assignee.id
     write_audit(db, current, "complaint.created", "complaint", complaint.id, {"department": complaint.department, "category": complaint.category, "priority": complaint.priority})
     db.commit()
     db.refresh(complaint)
@@ -458,6 +543,73 @@ def transition_complaint(
     old_status = complaint.status
     complaint.status = payload.status.value
     write_audit(db, current, "complaint.transitioned", "complaint", complaint.id, {"from": old_status, "to": complaint.status, "note": payload.note})
+    db.commit()
+    db.refresh(complaint)
+    return complaint
+
+
+@app.patch("/complaints/{complaint_id}/status", response_model=ComplaintOut)
+def update_complaint_status(
+    complaint_id: str,
+    payload: ComplaintTransition,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Complaint:
+    return transition_complaint(complaint_id, payload, current, db)
+
+
+@app.put("/complaints/{complaint_id}/solution", response_model=ComplaintOut)
+def provide_solution(
+    complaint_id: str,
+    payload: SolutionIn,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Complaint:
+    require_role(current, Role.staff, Role.department_head, Role.admin)
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    complaint.solution_text = payload.solution
+    complaint.solution_by_id = current.id
+    complaint.solution_at = utcnow()
+    complaint.status = ComplaintStatus.resolved.value
+    write_audit(db, current, "complaint.solution.provided", "complaint", complaint.id, {"solution_by_id": current.id})
+    db.commit()
+    db.refresh(complaint)
+    return complaint
+
+
+@app.get("/complaints/{complaint_id}/solution", response_model=SolutionOut)
+def get_solution(complaint_id: str, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> SolutionOut:
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    if not complaint.solution_text:
+        raise HTTPException(status_code=404, detail="solution not available")
+    return SolutionOut(complaint_id=complaint.id, solution=complaint.solution_text, staff_id=complaint.solution_by_id, resolved_at=complaint.solution_at)
+
+
+@app.post("/complaints/{complaint_id}/feedback", response_model=ComplaintOut)
+def submit_feedback(
+    complaint_id: str,
+    payload: FeedbackIn,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Complaint:
+    require_role(current, Role.student)
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    if not complaint.solution_text:
+        raise HTTPException(status_code=409, detail="complaint has no solution to review")
+    complaint.feedback_accepted = payload.accepted
+    complaint.feedback_comment = payload.comment
+    complaint.feedback_at = utcnow()
+    complaint.status = ComplaintStatus.closed.value if payload.accepted else ComplaintStatus.in_progress.value
+    write_audit(db, current, "complaint.feedback.submitted", "complaint", complaint.id, {"accepted": payload.accepted})
     db.commit()
     db.refresh(complaint)
     return complaint
@@ -870,6 +1022,16 @@ def send_message(
     write_audit(db, current, "message.sent", "message", str(message.id), {"recipient_id": recipient.id, "complaint_id": payload.complaint_id})
     db.commit()
     return message
+
+
+@app.post("/admin/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+def admin_send_message(
+    payload: MessageCreate,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Message:
+    require_role(current, Role.admin)
+    return send_message(payload, current, db)
 
 
 @app.get("/messages/inbox", response_model=list[MessageOut])

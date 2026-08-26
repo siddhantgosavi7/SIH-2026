@@ -15,7 +15,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -25,6 +25,9 @@ services:
   api:
     build: ./api
     env_file: ./api/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://complaints:complaints-local-password@postgres:5432/complaints
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
@@ -39,6 +42,9 @@ services:
   worker:
     build: ./api
     env_file: ./api/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://complaints:complaints-local-password@postgres:5432/complaints
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       api:
         condition: service_started

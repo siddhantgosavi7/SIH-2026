@@ -48,6 +48,22 @@ class UserOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SolutionIn(BaseModel):
+    solution: str = Field(min_length=1, max_length=5000)
+
+
+class FeedbackIn(BaseModel):
+    accepted: bool
+    comment: str | None = Field(default=None, max_length=2000)
+
+
+class SolutionOut(BaseModel):
+    complaint_id: str
+    solution: str
+    staff_id: int | None
+    resolved_at: datetime | None
+
+
 class ComplaintCreate(BaseModel):
     title: str = Field(min_length=3, max_length=240)
     description: str = Field(min_length=3)
@@ -91,6 +107,12 @@ class ComplaintOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+    solution_text: str | None
+    solution_by_id: int | None
+    solution_at: datetime | None
+    feedback_accepted: bool | None
+    feedback_comment: str | None
+    feedback_at: datetime | None
     student_name: str | None = None
     student_email: str | None = None
     student_prn: str | None = None

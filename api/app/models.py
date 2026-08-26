@@ -133,6 +133,12 @@ class Complaint(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    solution_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    solution_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    solution_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    feedback_accepted: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    feedback_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    feedback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     student: Mapped[User] = relationship(back_populates="complaints", foreign_keys=[student_id])
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="complaint")
