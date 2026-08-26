@@ -1,7 +1,11 @@
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    env_file: ./api/.env
+    env_file: ./api/api/.env
+    environment:
+      POSTGRES_USER: complaints
+      POSTGRES_PASSWORD: complaints-local-password
+      POSTGRES_DB: complaints
     ports:
       - "5432:5432"
     volumes:
@@ -23,8 +27,8 @@ services:
       retries: 5
 
   api:
-    build: ./api
-    env_file: ./api/.env
+    build: ./api/api
+    env_file: ./api/api/.env
     environment:
       DATABASE_URL: postgresql+psycopg://complaints:complaints-local-password@postgres:5432/complaints
       REDIS_URL: redis://redis:6379/0
@@ -40,8 +44,8 @@ services:
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   worker:
-    build: ./api
-    env_file: ./api/.env
+    build: ./api/api
+    env_file: ./api/api/.env
     environment:
       DATABASE_URL: postgresql+psycopg://complaints:complaints-local-password@postgres:5432/complaints
       REDIS_URL: redis://redis:6379/0
