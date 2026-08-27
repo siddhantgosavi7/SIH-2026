@@ -29,6 +29,9 @@ services:
   api:
     build: ./api/api
     env_file: ./api/api/.env
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       DATABASE_URL: postgresql+psycopg://complaints:complaints-local-password@postgres:5432/complaints
       REDIS_URL: redis://redis:6379/0
@@ -46,6 +49,9 @@ services:
   worker:
     build: ./api/api
     env_file: ./api/api/.env
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     environment:
       DATABASE_URL: postgresql+psycopg://complaints:complaints-local-password@postgres:5432/complaints
       REDIS_URL: redis://redis:6379/0

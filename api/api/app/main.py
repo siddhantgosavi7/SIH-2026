@@ -502,11 +502,12 @@ async def create_complaint(
     # -----------------------------
     # AI Problem Group Engine
     # -----------------------------
+# AI Problem Group Engine
     group = group_service.process(
         db=db,
-        text=f"{payload.title}\n{payload.description}",
+        title=payload.title,
+        description=payload.description,
     )
-
     # -----------------------------
     # Create Complaint
     # -----------------------------
