@@ -1,34 +1,240 @@
-"""Compatibility facade for the retired problem-group implementation.
+"""Core-problem grouping for the department workflow.
 
-The active complaint flow now uses :mod:`intelligent_intake` plus the existing
-complaint pipeline.  This module is retained so old imports do not crash.
+A ProblemGroup is the department-facing unit of work. A student can submit
+many individual complaints, but complaints describing the same real-world
+problem point to one ProblemGroup.
+
+The matcher is deliberately dependency-free and deterministic for the demo.
+The scorer is isolated so it can later be replaced by a pgvector/LLM semantic
+similarity provider without changing the database or API contract.
 """
 
+from __future__ import annotations
+
+import re
 from dataclasses import dataclass
+from difflib import SequenceMatcher
+from uuid import uuid4
 
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
 
-from app.services.intelligent_intake import build_payload
+from app.models import Complaint, ComplaintStatus, Priority, ProblemGroup
+
+
+CORE_PROBLEM_SIMILARITY_THRESHOLD = 0.40
+MAX_GROUP_CANDIDATES = 500
+
+_NORMALIZATION = {
+    "unavailable": "no",
+    "absent": "no",
+    "missing": "no",
+    "shortage": "no",
+    "supply": "water",
+    "supplies": "water",
+    "washroom": "bathroom",
+    "washrooms": "bathroom",
+    "residents": "student",
+    "students": "student",
+}
+
+
+def _tokens(text: str) -> set[str]:
+    words = {
+        word
+        for word in re.findall(r"[a-z0-9]+", text.lower())
+        if len(word) > 2
+    }
+    return {_NORMALIZATION.get(word, word) for word in words}
+
+
+def problem_similarity(left: str, right: str) -> float:
+    """Return a stable 0..1 similarity score.
+
+    Token overlap carries most of the score; sequence similarity catches
+    reordered/near-identical phrases. This is a fallback until semantic
+    embeddings are enabled.
+    """
+    a = _tokens(left)
+    b = _tokens(right)
+    jaccard = len(a & b) / len(a | b) if a and b else 0.0
+    sequence = SequenceMatcher(None, left.lower(), right.lower()).ratio()
+    return round(0.80 * jaccard + 0.20 * sequence, 4)
+
+
+def _priority_rank(value: str) -> int:
+    return {
+        Priority.low.value: 1,
+        Priority.normal.value: 2,
+        Priority.high.value: 3,
+        Priority.urgent.value: 4,
+    }.get(value, 2)
+
+
+def _max_priority(values: list[str]) -> str:
+    return max(values, key=_priority_rank) if values else Priority.normal.value
+
+
+def _recalculate_group(db: Session, group: ProblemGroup) -> None:
+    """Rebuild group counters from complaints; never trust frontend counters."""
+    complaints = (
+        db.query(Complaint)
+        .filter(
+            Complaint.problem_group_id == group.id,
+            Complaint.deleted_at.is_(None),
+        )
+        .all()
+    )
+
+    group.complaint_count = len(complaints)
+    group.affected_users = len({c.student_id for c in complaints})
+    group.priority = _max_priority([c.priority for c in complaints])
+
+    # Group status is derived from the member complaints. A single rejected
+    # solution/reopened complaint therefore makes the common problem active
+    # again, while the group becomes closed only when every member is closed.
+    statuses = {c.status for c in complaints}
+    if statuses and statuses <= {ComplaintStatus.closed.value}:
+        group.status = ComplaintStatus.closed.value
+    elif ComplaintStatus.open.value in statuses:
+        group.status = ComplaintStatus.open.value
+    elif ComplaintStatus.escalated.value in statuses:
+        group.status = ComplaintStatus.escalated.value
+    elif ComplaintStatus.in_progress.value in statuses:
+        group.status = ComplaintStatus.in_progress.value
+    else:
+        group.status = ComplaintStatus.resolved.value
 
 
 @dataclass(frozen=True)
-class GroupResult:
-    id: str | None
-    problem_code: str | None
-    department: str
-    priority: str
-    affected_users: int
+class GroupAssignment:
+    group: ProblemGroup
+    similarity_score: float
+    created: bool
 
 
-class ProblemGroupingService:
-    """Backward-compatible adapter; no separate problem-group table is required."""
+def assign_complaint_to_group(
+    db: Session,
+    complaint: Complaint,
+    threshold: float = CORE_PROBLEM_SIMILARITY_THRESHOLD,
+) -> GroupAssignment:
+    """Find/create the canonical ProblemGroup and attach the complaint.
 
-    def process(self, db: Session, title: str, description: str) -> GroupResult:
-        payload = build_payload(db, title, description)
-        return GroupResult(
-            id=None,
-            problem_code=None,
-            department=payload.department,
-            priority="normal",
-            affected_users=payload.affected_users,
+    Existing ungrouped complaints that clearly describe the same problem are
+    backfilled into the group as well. This makes the feature safe to enable
+    on a database that already contains complaints.
+    """
+    text = f"{complaint.title}. {complaint.description}".strip()
+
+    groups = (
+        db.query(ProblemGroup)
+        .filter(ProblemGroup.department == complaint.department)
+        .order_by(ProblemGroup.created_at.desc())
+        .limit(MAX_GROUP_CANDIDATES)
+        .all()
+    )
+
+    best_group: ProblemGroup | None = None
+    best_score = 0.0
+
+    for group in groups:
+        score = problem_similarity(
+            text,
+            f"{group.title}. {group.description}",
         )
+        if score > best_score:
+            best_group = group
+            best_score = score
+
+    created = False
+    if best_group is None or best_score < threshold:
+        best_group = ProblemGroup(
+            id=str(uuid4()),
+            problem_code=f"PROB-{uuid4().hex[:8].upper()}",
+            title=complaint.title,
+            description=complaint.description,
+            department=complaint.department,
+            complaint_count=0,
+            affected_users=0,
+            priority=complaint.priority,
+            status=ComplaintStatus.open.value,
+        )
+        db.add(best_group)
+        db.flush()
+        best_score = 1.0
+        created = True
+
+    complaint.problem_group_id = best_group.id
+
+    # Backfill old complaints that had no group. This is deliberately limited
+    # to the same department and to a bounded candidate set.
+    if not created:
+        historical = (
+            db.query(Complaint)
+            .filter(
+                Complaint.id != complaint.id,
+                Complaint.problem_group_id.is_(None),
+                Complaint.department == complaint.department,
+                Complaint.deleted_at.is_(None),
+            )
+            .order_by(Complaint.created_at.desc())
+            .limit(MAX_GROUP_CANDIDATES)
+            .all()
+        )
+        for candidate in historical:
+            score = problem_similarity(
+                text,
+                f"{candidate.title}. {candidate.description}",
+            )
+            if score >= threshold:
+                candidate.problem_group_id = best_group.id
+
+    _recalculate_group(db, best_group)
+
+    # Keep every complaint in the group aligned with the aggregate impact.
+    # Each individual complaint still retains its own student_id.
+    for member in (
+        db.query(Complaint)
+        .filter(
+            Complaint.problem_group_id == best_group.id,
+            Complaint.deleted_at.is_(None),
+        )
+        .all()
+    ):
+        member.affected_users = best_group.affected_users
+
+    # The incoming complaint may have been created against a previously
+    # resolved group. Re-open it when a new active report arrives.
+    if best_group.status == ComplaintStatus.resolved.value:
+        best_group.status = ComplaintStatus.open.value
+
+    return GroupAssignment(
+        group=best_group,
+        similarity_score=best_score,
+        created=created,
+    )
+
+
+def get_group_for_department(
+    db: Session,
+    group_id: str,
+    department: str | None,
+) -> ProblemGroup | None:
+    query = db.query(ProblemGroup).filter(ProblemGroup.id == group_id)
+    if department is not None:
+        query = query.filter(ProblemGroup.department == department)
+    return query.first()
+
+
+def recalculate_group(db: Session, group: ProblemGroup) -> ProblemGroup:
+    _recalculate_group(db, group)
+    for member in (
+        db.query(Complaint)
+        .filter(
+            Complaint.problem_group_id == group.id,
+            Complaint.deleted_at.is_(None),
+        )
+        .all()
+    ):
+        member.affected_users = group.affected_users
+    return group

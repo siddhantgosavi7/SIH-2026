@@ -15,7 +15,7 @@ from app.api.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
 from app.pipeline import analyze_complaint
 from app.core.logging import configure_logging
-from app.models import Attachment, AuditLog, Comment, Complaint, ComplaintStatus, DepartmentPolicy, Message, Notification, Role, StudentProfile, User, utcnow
+from app.models import Attachment, AuditLog, Comment, Complaint, ComplaintStatus, DepartmentPolicy, Message, Notification, ProblemGroup, Role, StudentProfile, User, utcnow
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
 from app.schemas import (
@@ -51,6 +51,10 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.workers.queue import enqueue_ai_processing
 from app.workers.sla_tasks import check_slas
 from app.services.intelligent_intake import build_payload
+from app.api.routes.problem_groups import router as problem_groups_router
+from app.services.problem_grouping import assign_complaint_to_group, recalculate_group
+from app.pipeline.priority import apply_priority
+from app.pipeline.classifier import classify_complaint
 
 DEPARTMENTS = [
     "Hostel",
@@ -83,6 +87,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(problem_groups_router)
 
 
 @app.on_event("startup")
@@ -492,7 +499,9 @@ async def create_complaint(
         title=internal.title,
         description=internal.description,
         department=internal.department,
-        affected_users=internal.affected_users,
+        # The authoritative impact value is calculated after the complaint
+        # has been attached to a ProblemGroup.
+        affected_users=1,
         source="web",
     )
     db.add(complaint)
@@ -500,6 +509,17 @@ async def create_complaint(
 
     # Existing downstream pipeline: classification -> priority -> relations.
     analyze_complaint(db, complaint)
+
+    # Create/find the department-facing Core Problem and derive the distinct
+    # affected-student count from all complaints in that group.
+    assignment = assign_complaint_to_group(db, complaint)
+    complaint.affected_users = assignment.group.affected_users
+
+    # Re-apply priority using the group-wide impact rather than only the
+    # incoming student's single complaint.
+    text_tokens = classify_complaint(db, complaint)
+    apply_priority(complaint, text_tokens)
+    recalculate_group(db, assignment.group)
 
     assignee = (
         db.query(User)
@@ -598,6 +618,10 @@ def transition_complaint(
         raise HTTPException(status_code=409, detail=f"cannot transition {complaint.status} to {payload.status.value}")
     old_status = complaint.status
     complaint.status = payload.status.value
+    if complaint.problem_group_id:
+        group = db.get(ProblemGroup, complaint.problem_group_id)
+        if group:
+            recalculate_group(db, group)
     write_audit(db, current, "complaint.transitioned", "complaint", complaint.id, {"from": old_status, "to": complaint.status, "note": payload.note})
     db.commit()
     db.refresh(complaint)
@@ -630,6 +654,10 @@ def provide_solution(
     complaint.solution_by_id = current.id
     complaint.solution_at = utcnow()
     complaint.status = ComplaintStatus.resolved.value
+    if complaint.problem_group_id:
+        group = db.get(ProblemGroup, complaint.problem_group_id)
+        if group:
+            recalculate_group(db, group)
     write_audit(db, current, "complaint.solution.provided", "complaint", complaint.id, {"solution_by_id": current.id})
     db.commit()
     db.refresh(complaint)
@@ -665,6 +693,10 @@ def submit_feedback(
     complaint.feedback_comment = payload.comment
     complaint.feedback_at = utcnow()
     complaint.status = ComplaintStatus.closed.value if payload.accepted else ComplaintStatus.in_progress.value
+    if complaint.problem_group_id:
+        group = db.get(ProblemGroup, complaint.problem_group_id)
+        if group:
+            recalculate_group(db, group)
     write_audit(db, current, "complaint.feedback.submitted", "complaint", complaint.id, {"accepted": payload.accepted})
     db.commit()
     db.refresh(complaint)
@@ -698,6 +730,10 @@ def reopen_complaint(complaint_id: str, payload: ReopenRequest, current: User = 
     if complaint.status not in {ComplaintStatus.resolved.value, ComplaintStatus.closed.value}:
         raise HTTPException(status_code=409, detail="only resolved complaints can be reopened")
     complaint.status = ComplaintStatus.in_progress.value
+    if complaint.problem_group_id:
+        group = db.get(ProblemGroup, complaint.problem_group_id)
+        if group:
+            recalculate_group(db, group)
     write_audit(db, current, "complaint.reopened", "complaint", complaint.id, {"reason": payload.reason})
     db.commit()
     db.refresh(complaint)
@@ -726,6 +762,10 @@ def delete_complaint(
     if complaint.deleted_at is not None:
         raise HTTPException(status_code=404, detail="complaint already deleted")
     complaint.deleted_at = utcnow()
+    if complaint.problem_group_id:
+        group = db.get(ProblemGroup, complaint.problem_group_id)
+        if group:
+            recalculate_group(db, group)
     write_audit(db, current, "complaint.deleted", "complaint", complaint.id, {"title": complaint.title, "department": complaint.department, "status": complaint.status})
     db.commit()
 
@@ -788,6 +828,11 @@ def intake_email(payload: ComplaintCreate, current: User = Depends(get_current_u
     db.add(complaint)
     db.flush()
     analyze_complaint(db, complaint)
+    assignment = assign_complaint_to_group(db, complaint)
+    complaint.affected_users = assignment.group.affected_users
+    text_tokens = classify_complaint(db, complaint)
+    apply_priority(complaint, text_tokens)
+    recalculate_group(db, assignment.group)
     write_audit(
         db,
         current,
@@ -829,6 +874,11 @@ async def intake_pdf(
     db.add(complaint)
     db.flush()
     analyze_complaint(db, complaint)
+    assignment = assign_complaint_to_group(db, complaint)
+    complaint.affected_users = assignment.group.affected_users
+    text_tokens = classify_complaint(db, complaint)
+    apply_priority(complaint, text_tokens)
+    recalculate_group(db, assignment.group)
     target = settings.upload_path / f"{uuid4()}-{Path(file.filename or 'intake.pdf').name}"
     target.write_bytes(content)
     db.add(Attachment(complaint_id=complaint.id, filename=file.filename or "intake.pdf", content_type="application/pdf", size_bytes=len(content), storage_path=str(target)))

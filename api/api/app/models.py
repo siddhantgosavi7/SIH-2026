@@ -1,7 +1,6 @@
 import enum
 import uuid
 from datetime import datetime, timedelta, timezone
-
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.dialects.postgresql import UUID
@@ -111,6 +110,43 @@ class DepartmentPolicy(Base):
     sla_hours: Mapped[int] = mapped_column(Integer, default=48, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+
+class ProblemGroup(Base):
+    """A single real-world problem represented by many student complaints.
+
+    This is the department-facing unit of work. Individual complaints remain
+    linked to their students and point to this group through problem_group_id.
+    """
+
+    __tablename__ = "problem_groups"
+
+    id: Mapped[UUID] = mapped_column(
+    UUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+    )
+    problem_code: Mapped[str] = mapped_column(String(32), unique=True, index=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    department: Mapped[str] = mapped_column(String(120), index=True, nullable=False)
+    embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
+    complaint_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    affected_users: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    priority: Mapped[str] = mapped_column(String(32), default=Priority.normal.value, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default=ComplaintStatus.open.value, nullable=False)
+    solution_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    solution_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    solution_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    complaints: Mapped[list["Complaint"]] = relationship(
+        back_populates="problem_group",
+        foreign_keys="Complaint.problem_group_id",
+    )
+    solution_by: Mapped["User | None"] = relationship(foreign_keys=[solution_by_id])
+
+
 class Complaint(Base):
     __tablename__ = "complaints"
 
@@ -124,6 +160,12 @@ class Complaint(Base):
     source: Mapped[str] = mapped_column(String(32), default="web", nullable=False)
     affected_users: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     assigned_to_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
+    problem_group_id: Mapped[UUID | None] = mapped_column(
+    UUID(as_uuid=True),
+    ForeignKey("problem_groups.id"),
+    index=True,
+    nullable=True,
+)
     title: Mapped[str] = mapped_column(String(240), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), index=True, default=ComplaintStatus.open.value, nullable=False)
@@ -141,6 +183,7 @@ class Complaint(Base):
     feedback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     student: Mapped[User] = relationship(back_populates="complaints", foreign_keys=[student_id])
+    problem_group: Mapped["ProblemGroup | None"] = relationship(back_populates="complaints", foreign_keys=[problem_group_id])
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="complaint")
 
     @property

@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 
 from app.models import ComplaintStatus, Role
@@ -103,6 +103,10 @@ class ComplaintOut(BaseModel):
     source: str
     affected_users: int
     assigned_to_id: int | None
+
+    # FIX: database problem_group_id is PostgreSQL UUID
+    problem_group_id: UUID | None = None
+
     sla_due_at: datetime
     duplicate_of_id: str | None
     created_at: datetime
@@ -123,6 +127,52 @@ class ComplaintOut(BaseModel):
     student_contact: str | None = None
 
     model_config = {"from_attributes": True}
+
+class ProblemStudentOut(BaseModel):
+    user_id: int
+    name: str | None = None
+    email: str | None = None
+    prn: str | None = None
+    division: str | None = None
+    roll_no: str | None = None
+    year_semester: str | None = None
+    contact_number: str | None = None
+
+
+class ProblemComplaintOut(BaseModel):
+    id: str
+    student_id: int
+    title: str
+    description: str
+    status: str
+    priority: str
+    created_at: datetime
+    solution_text: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class ProblemGroupSummaryOut(BaseModel):
+    id: str
+    problem_code: str
+    title: str
+    description: str
+    department: str
+    complaint_count: int
+    affected_users: int
+    priority: str
+    status: str
+    solution_text: str | None = None
+    solution_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ProblemGroupDetailOut(ProblemGroupSummaryOut):
+    students: list[ProblemStudentOut] = []
+    complaints: list[ProblemComplaintOut] = []
 
 
 class AttachmentOut(BaseModel):
