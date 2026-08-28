@@ -127,6 +127,7 @@ class ComplaintOut(BaseModel):
     student_contact: str | None = None
 
     model_config = {"from_attributes": True}
+    
 
 class ProblemStudentOut(BaseModel):
     user_id: int
