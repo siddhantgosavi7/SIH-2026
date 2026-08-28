@@ -16,16 +16,16 @@ def test_get_departments(client):
 def test_complaint_department_validation(client):
     student_token = token(client, "student@example.edu")
     
-    # Valid department
+    # Department is now inferred from title/description.
     valid_res = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "CSE", "title": "Lab PC not working", "description": "PC #12 in Lab 3 won't boot."},
+        json={"title": "CSE Lab PC not working", "description": "PC #12 in the CSE lab won't boot."},
     )
     assert valid_res.status_code == 201
     assert valid_res.json()["department"] == "CSE"
 
-    # Invalid department -> 422
+    # Supplying an internal field is rejected by the public intake contract.
     invalid_res = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
@@ -42,12 +42,12 @@ def test_admin_departments_overview(client):
     client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "CSE", "title": "CSE Issue 1", "description": "Descr 1"},
+        json={"title": "CSE Issue 1", "description": "CSE laboratory computer issue."},
     )
     client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "AIML", "title": "AIML Issue 1", "description": "Descr 2"},
+        json={"title": "AIML Issue 1", "description": "AIML laboratory equipment issue."},
     )
 
     overview_res = client.get("/admin/departments/overview", headers={"Authorization": f"Bearer {admin_token}"})
@@ -67,7 +67,7 @@ def test_admin_nudge_complaint(client, db):
     created = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "Hostel", "title": "Nudge test", "description": "Hostel issue for nudge"},
+        json={"title": "Nudge test", "description": "Hostel issue for nudge"},
     ).json()
 
     nudge_res = client.post(
@@ -95,7 +95,7 @@ def test_admin_nudge_department(client, db):
     client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "Biotech", "title": "Biotech Lab issue", "description": "Equipment calibration"},
+        json={"title": "Biotech Lab issue", "description": "Biotech equipment calibration issue."},
     )
 
     nudge_res = client.post(

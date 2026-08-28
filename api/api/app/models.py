@@ -111,57 +111,6 @@ class DepartmentPolicy(Base):
     sla_hours: Mapped[int] = mapped_column(Integer, default=48, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-class ProblemGroup(Base):
-    __tablename__ = "problem_groups"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
-
-    problem_code: Mapped[str] = mapped_column(
-        String(30),
-        unique=True,
-        index=True,
-        nullable=False,
-    )
-
-    title: Mapped[str] = mapped_column(String(240), nullable=False)
-    department: Mapped[str] = mapped_column(String(120), nullable=False)
-
-    embedding: Mapped[list[float] | None] = mapped_column(
-        JSON,
-        nullable=True,
-    )
-
-    complaint_count: Mapped[int] = mapped_column(
-        Integer,
-        default=1,
-        nullable=False,
-    )
-
-    priority: Mapped[str] = mapped_column(
-        String(32),
-        default=Priority.low.value,
-        nullable=False,
-    )
-
-    status: Mapped[str] = mapped_column(
-        String(32),
-        default="open",
-        nullable=False,
-    )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        default=utcnow,
-        nullable=False,
-    )
-
-    complaints: Mapped[list["Complaint"]] = relationship(
-        back_populates="problem_group",
-    )
 class Complaint(Base):
     __tablename__ = "complaints"
 
@@ -175,16 +124,6 @@ class Complaint(Base):
     source: Mapped[str] = mapped_column(String(32), default="web", nullable=False)
     affected_users: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     assigned_to_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
-    problem_group_id: Mapped[uuid.UUID | None] = mapped_column(
-    UUID(as_uuid=True),
-    ForeignKey("problem_groups.id"),
-    index=True,
-    nullable=True,
-)
-
-    problem_group: Mapped["ProblemGroup | None"] = relationship(
-    back_populates="complaints",
-)
     title: Mapped[str] = mapped_column(String(240), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), index=True, default=ComplaintStatus.open.value, nullable=False)

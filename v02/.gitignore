@@ -1,0 +1,8 @@
+.env
+api/.env
+api/.venv/
+api/test-uploads/
+web/node_modules/
+web/dist/
+__pycache__/
+.pytest_cache/

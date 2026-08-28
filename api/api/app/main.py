@@ -15,7 +15,6 @@ from app.api.dependencies import get_current_user
 from app.idempotency import get_existing, request_hash, store_response
 from app.pipeline import analyze_complaint
 from app.core.logging import configure_logging
-from app.services.problem_grouping import ProblemGroupingService
 from app.models import Attachment, AuditLog, Comment, Complaint, ComplaintStatus, DepartmentPolicy, Message, Notification, Role, StudentProfile, User, utcnow
 from app.rate_limit import RateLimiter
 from app.rbac import enforce_view_complaint, require_role
@@ -51,6 +50,7 @@ from app.schemas import (
 from app.core.security import create_access_token, hash_password, verify_password
 from app.workers.queue import enqueue_ai_processing
 from app.workers.sla_tasks import check_slas
+from app.services.intelligent_intake import build_payload
 
 DEPARTMENTS = [
     "Hostel",
@@ -439,8 +439,6 @@ def create_user(payload: UserCreate, current: User = Depends(get_current_user), 
     db.refresh(user)
     return user
 
-group_service = ProblemGroupingService()
-
 @app.post(
     "/complaints",
     response_model=ComplaintOut,
@@ -449,40 +447,24 @@ group_service = ProblemGroupingService()
 async def create_complaint(
     payload: ComplaintCreate,
     request: Request,
-    idempotency_key: str | None = Header(
-        default=None,
-        alias="Idempotency-Key",
-    ),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Create a complaint from the public two-field intake contract.
+
+    Public input:
+        title + description
+
+    Internal flow:
+        1. find historical similar complaints
+        2. calculate distinct affected users
+        3. create the complaint with that internal impact value
+        4. run the existing classification/priority/duplicate pipeline
     """
-    Student creates a complaint.
+    require_role(current, Role.student, Role.admin)
 
-    Student only provides:
-        - title
-        - description
-
-    AI automatically generates:
-        - department
-        - problem_group
-        - priority
-    """
-
-    # -----------------------------
-    # RBAC
-    # -----------------------------
-    if current.role not in [Role.student, Role.admin]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only students can create complaints.",
-        )
-
-    # -----------------------------
-    # Idempotency
-    # -----------------------------
     body_hash = await request_hash(request)
-
     if idempotency_key:
         existing = get_existing(
             db=db,
@@ -492,63 +474,45 @@ async def create_complaint(
             path=request.url.path,
             body_hash=body_hash,
         )
-
         if existing:
             return JSONResponse(
                 status_code=existing.status_code,
                 content=existing.response_json,
             )
 
-    # -----------------------------
-    # AI Problem Group Engine
-    # -----------------------------
-# AI Problem Group Engine
-    group = group_service.process(
+    internal = build_payload(
         db=db,
         title=payload.title,
         description=payload.description,
     )
-    # -----------------------------
-    # Create Complaint
-    # -----------------------------
+
     complaint = Complaint(
         id=str(uuid4()),
         student_id=current.id,
-        title=payload.title,
-        description=payload.description,
-        department=group.department,
-        priority=group.priority,
-        problem_group_id=group.id,
-        affected_users=payload.affected_users,
+        title=internal.title,
+        description=internal.description,
+        department=internal.department,
+        affected_users=internal.affected_users,
+        source="web",
     )
-
     db.add(complaint)
     db.flush()
 
-    # -----------------------------
-    # Auto Assign Staff
-    # -----------------------------
+    # Existing downstream pipeline: classification -> priority -> relations.
+    analyze_complaint(db, complaint)
+
     assignee = (
         db.query(User)
         .filter(
-            User.department == group.department,
-            User.role.in_(
-                [
-                    Role.staff.value,
-                    Role.department_head.value,
-                ]
-            ),
+            User.department == complaint.department,
+            User.role.in_([Role.staff.value, Role.department_head.value]),
         )
         .order_by(User.id)
         .first()
     )
-
     if assignee:
         complaint.assigned_to_id = assignee.id
 
-    # -----------------------------
-    # Audit Log
-    # -----------------------------
     write_audit(
         db=db,
         actor=current,
@@ -556,25 +520,17 @@ async def create_complaint(
         entity_type="complaint",
         entity_id=complaint.id,
         metadata={
-            "department": group.department,
-            "problem_code": group.problem_code,
-            "priority": group.priority,
+            "department": complaint.department,
+            "affected_users": complaint.affected_users,
+            "similar_complaints": internal.similar_complaints_count,
+            "similar_complaint_ids": list(internal.similar_complaint_ids),
         },
     )
 
-    # -----------------------------
-    # Save
-    # -----------------------------
     db.commit()
     db.refresh(complaint)
 
-    response = ComplaintOut.model_validate(complaint).model_dump(
-        mode="json"
-    )
-
-    # -----------------------------
-    # Store Idempotent Response
-    # -----------------------------
+    response = ComplaintOut.model_validate(complaint).model_dump(mode="json")
     if idempotency_key:
         store_response(
             db=db,
@@ -588,11 +544,7 @@ async def create_complaint(
         )
         db.commit()
 
-    # -----------------------------
-    # Optional Background Analytics
-    # -----------------------------
     enqueue_ai_processing(complaint.id)
-
     return complaint
 
 @app.get("/complaints", response_model=list[ComplaintOut])
@@ -823,11 +775,27 @@ async def add_attachment(
 @app.post("/intake/email", response_model=ComplaintOut, status_code=status.HTTP_201_CREATED)
 def intake_email(payload: ComplaintCreate, current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> Complaint:
     require_role(current, Role.staff, Role.admin)
-    complaint = Complaint(id=str(uuid4()), student_id=current.id, department="General Review", title=payload.title, description=payload.description, affected_users=payload.affected_users, source="email")
+    internal = build_payload(db, payload.title, payload.description)
+    complaint = Complaint(
+        id=str(uuid4()),
+        student_id=current.id,
+        department=internal.department,
+        title=internal.title,
+        description=internal.description,
+        affected_users=internal.affected_users,
+        source="email",
+    )
     db.add(complaint)
     db.flush()
     analyze_complaint(db, complaint)
-    write_audit(db, current, "intake.email.created", "complaint", complaint.id)
+    write_audit(
+        db,
+        current,
+        "intake.email.created",
+        "complaint",
+        complaint.id,
+        {"affected_users": complaint.affected_users, "similar_complaints": internal.similar_complaints_count},
+    )
     db.commit()
     db.refresh(complaint)
     enqueue_ai_processing(complaint.id)
@@ -847,7 +815,17 @@ async def intake_pdf(
     content = await file.read()
     if len(content) > settings.max_upload_bytes:
         raise HTTPException(status_code=413, detail="attachment too large")
-    complaint = Complaint(id=str(uuid4()), student_id=current.id, department="General Review", title=title, description=f"PDF intake: {file.filename}", source="pdf")
+    description = f"PDF intake: {file.filename}"
+    internal = build_payload(db, title, description)
+    complaint = Complaint(
+        id=str(uuid4()),
+        student_id=current.id,
+        department=internal.department,
+        title=internal.title,
+        description=internal.description,
+        affected_users=internal.affected_users,
+        source="pdf",
+    )
     db.add(complaint)
     db.flush()
     analyze_complaint(db, complaint)

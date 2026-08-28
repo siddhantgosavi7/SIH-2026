@@ -39,7 +39,7 @@ def test_attachment_validation(client):
     complaint = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "Hostel", "title": "Upload case", "description": "Need attach proof for complaint.", "priority": "normal"},
+        json={"title": "Hostel upload case", "description": "Need attach proof for this hostel complaint."},
     ).json()
     res = client.post(
         f"/complaints/{complaint['id']}/attachments",

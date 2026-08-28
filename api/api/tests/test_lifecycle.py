@@ -8,13 +8,13 @@ def test_student_creates_and_sees_only_own_history(client):
     first = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}", "Idempotency-Key": "case-1"},
-        json={"department": "Hostel", "title": "Room fan broken", "description": "Fan has been broken for three days.", "priority": "normal"},
+        json={"title": "Room fan broken", "description": "Fan has been broken for three days."},
     )
     assert first.status_code == 201, first.text
     replay = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}", "Idempotency-Key": "case-1"},
-        json={"department": "Hostel", "title": "Room fan broken", "description": "Fan has been broken for three days.", "priority": "normal"},
+        json={"title": "Room fan broken", "description": "Fan has been broken for three days."},
     )
     assert replay.status_code == 201
     assert replay.json()["id"] == first.json()["id"]
@@ -31,7 +31,7 @@ def test_staff_department_queue_and_transition(client):
     created = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "Hostel", "title": "Water issue", "description": "No water in block A washroom.", "priority": "high"},
+        json={"title": "Water issue", "description": "No water in block A washroom."},
     ).json()
     queue = client.get("/complaints", headers={"Authorization": f"Bearer {staff_token}"})
     assert [item["id"] for item in queue.json()] == [created["id"]]
@@ -50,7 +50,7 @@ def test_invalid_transition_blocked(client):
     complaint = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "Hostel", "title": "Mess issue", "description": "Food quality issue in mess.", "priority": "normal"},
+        json={"title": "Mess issue", "description": "Food quality issue in mess."},
     ).json()
     res = client.patch(
         f"/complaints/{complaint['id']}/transition",
@@ -98,7 +98,7 @@ def test_sla_escalation(client, db):
     created = client.post(
         "/complaints",
         headers={"Authorization": f"Bearer {student_token}"},
-        json={"department": "Hostel", "title": "Old case", "description": "This complaint breached deadline.", "priority": "normal"},
+        json={"title": "Old case", "description": "This complaint breached deadline."},
     ).json()
     complaint = db.get(Complaint, created["id"])
     complaint.sla_due_at = complaint.created_at
@@ -106,3 +106,39 @@ def test_sla_escalation(client, db):
     res = client.post("/admin/sla-check", headers={"Authorization": f"Bearer {admin_token}"})
     assert res.status_code == 200
     assert res.json()["escalated"] == 1
+
+
+def test_public_intake_rejects_internal_fields(client):
+    student_token = token(client, "student@example.edu")
+    res = client.post(
+        "/complaints",
+        headers={"Authorization": f"Bearer {student_token}"},
+        json={
+            "title": "Water issue",
+            "description": "No water in hostel block A.",
+            "affected_users": 999,
+        },
+    )
+    assert res.status_code == 422
+
+
+def test_similar_complaints_increase_affected_users(client):
+    first_token = token(client, "student@example.edu")
+    second_token = token(client, "other@example.edu")
+
+    first = client.post(
+        "/complaints",
+        headers={"Authorization": f"Bearer {first_token}"},
+        json={"title": "Hostel Block A water outage", "description": "No water in Hostel Block A since morning."},
+    )
+    assert first.status_code == 201, first.text
+    assert first.json()["affected_users"] == 1
+
+    second = client.post(
+        "/complaints",
+        headers={"Authorization": f"Bearer {second_token}"},
+        json={"title": "No water in Hostel Block A", "description": "Hostel Block A water supply has been unavailable since morning."},
+    )
+    assert second.status_code == 201, second.text
+    assert second.json()["affected_users"] == 2
+    assert second.json()["department"] == "Hostel"

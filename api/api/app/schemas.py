@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models import ComplaintStatus, Priority, Role
+from app.models import ComplaintStatus, Role
 
 
 class TokenOut(BaseModel):
@@ -65,11 +65,12 @@ class SolutionOut(BaseModel):
 
 
 class ComplaintCreate(BaseModel):
+    """Public complaint intake contract. Only title and description are accepted."""
+
     title: str = Field(min_length=3, max_length=240)
     description: str = Field(min_length=3)
-    department: str | None = None
-    priority: Priority = Priority.normal
-    affected_users: int = Field(default=1, ge=1, le=100000)
+
+    model_config = {"extra": "forbid"}
 
 
 
