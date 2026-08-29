@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.dependencies import get_current_user
@@ -77,6 +77,9 @@ def _summary_query(db: Session, department: str | None):
 def list_problem_groups(
     priority: str | None = Query(default=None),
     status: str | None = Query(default=None),
+    q: str | None = Query(default=None, min_length=1, max_length=120),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[ProblemGroup]:
@@ -89,8 +92,17 @@ def list_problem_groups(
         query = query.filter(ProblemGroup.priority == priority.lower())
     if status:
         query = query.filter(ProblemGroup.status == status.lower())
+    if q:
+        term = f"%{q.strip()}%"
+        query = query.filter(
+            or_(
+                ProblemGroup.title.ilike(term),
+                ProblemGroup.description.ilike(term),
+                ProblemGroup.problem_code.ilike(term),
+            )
+        )
 
-    groups = query.all()
+    groups = query.offset(offset).limit(limit).all()
 
     # Counters are derived from complaints so the dashboard can never become
     # stale because a frontend sent a wrong affected_users value.
@@ -98,7 +110,24 @@ def list_problem_groups(
         recalculate_group(db, group)
     db.commit()
 
-    return groups
+    return [
+    ProblemGroupSummaryOut(
+        id=str(group.id),
+        problem_code=group.problem_code,
+        title=group.title,
+        description=group.description,
+        department=group.department,
+        complaint_count=group.complaint_count,
+        affected_users=group.affected_users,
+        priority=group.priority,
+        status=group.status,
+        solution_text=group.solution_text,
+        solution_at=group.solution_at,
+        created_at=group.created_at,
+        updated_at=group.updated_at,
+    )
+    for group in groups
+]
 
 
 @router.get("/{problem_id}", response_model=ProblemGroupDetailOut)
