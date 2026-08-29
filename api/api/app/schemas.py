@@ -65,12 +65,34 @@ class SolutionOut(BaseModel):
 
 
 class ComplaintCreate(BaseModel):
-    """Public complaint intake contract. Only title and description are accepted."""
+    """Student complaint intake.
+
+    ``force_new`` is used only after the student has been shown similar
+    existing problems and explicitly chooses to continue with a genuinely
+    new problem.
+    """
 
     title: str = Field(min_length=3, max_length=240)
     description: str = Field(min_length=3)
+    force_new: bool = False
 
     model_config = {"extra": "forbid"}
+
+
+class SimilarProblemOut(BaseModel):
+    id: UUID
+    problem_code: str
+    title: str
+    description: str
+    department: str
+    complaint_count: int
+    affected_users: int
+    priority: str
+    status: str
+    similarity: float
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 
@@ -151,6 +173,40 @@ class ProblemComplaintOut(BaseModel):
     solution_text: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ProblemGroupStudentOut(BaseModel):
+    """Student-safe projection of an active core problem."""
+
+    id: UUID
+    problem_code: str
+    title: str
+    description: str
+    department: str
+    complaint_count: int
+    affected_users: int
+    priority: str
+    status: str
+    solution_text: str | None = None
+    solution_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+    my_complaint_id: str | None = None
+    my_complaint_status: str | None = None
+    already_reported: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class ProblemReportOut(BaseModel):
+    created: bool
+    complaint_id: str
+    problem_id: str
+    status: str
+    department: str
+    assigned_to_id: int | None
+    affected_users: int
+    message: str
 
 
 class ProblemGroupSummaryOut(BaseModel):

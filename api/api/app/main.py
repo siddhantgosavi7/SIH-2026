@@ -42,6 +42,7 @@ from app.schemas import (
     StudentRegister,
     FeedbackIn,
     SolutionIn,
+    SimilarProblemOut,
     SolutionOut,
     TokenOut,
     UserCreate,
@@ -52,7 +53,8 @@ from app.workers.queue import enqueue_ai_processing
 from app.workers.sla_tasks import check_slas
 from app.services.intelligent_intake import build_payload
 from app.api.routes.problem_groups import router as problem_groups_router
-from app.services.problem_grouping import assign_complaint_to_group, recalculate_group
+from app.api.routes.student_problems import router as student_problems_router
+from app.services.problem_grouping import assign_complaint_to_group, recalculate_group, resolve_problem_group
 from app.pipeline.priority import apply_priority
 from app.pipeline.classifier import classify_complaint
 
@@ -90,6 +92,7 @@ app.add_middleware(
 
 
 app.include_router(problem_groups_router)
+app.include_router(student_problems_router)
 
 
 @app.on_event("startup")
@@ -520,7 +523,7 @@ async def create_complaint(
 
     # Create/find the department-facing Core Problem and derive the distinct
     # affected-student count from all complaints in that group.
-    assignment = assign_complaint_to_group(db, complaint)
+    assignment = assign_complaint_to_group(db, complaint, force_new=payload.force_new)
     complaint.affected_users = assignment.group.affected_users
 
     # Re-apply priority using the group-wide impact. If the LLM assigned a lower
@@ -561,6 +564,7 @@ async def create_complaint(
             "affected_users": complaint.affected_users,
             "similar_complaints": internal.similar_complaints_count,
             "similar_complaint_ids": list(internal.similar_complaint_ids),
+            "force_new": payload.force_new,
         },
     )
 
@@ -667,15 +671,25 @@ def provide_solution(
     if not complaint:
         raise HTTPException(status_code=404, detail="complaint not found")
     enforce_view_complaint(current, complaint)
-    complaint.solution_text = payload.solution
-    complaint.solution_by_id = current.id
-    complaint.solution_at = utcnow()
-    complaint.status = ComplaintStatus.resolved.value
     if complaint.problem_group_id:
         group = db.get(ProblemGroup, complaint.problem_group_id)
         if group:
-            recalculate_group(db, group)
-    write_audit(db, current, "complaint.solution.provided", "complaint", complaint.id, {"solution_by_id": current.id})
+            # A grouped complaint represents one real-world problem. Solving
+            # an individual member therefore resolves the canonical problem
+            # and notifies every student who reported/joined that problem.
+            resolve_problem_group(db, group, payload.solution, current)
+        else:
+            complaint.solution_text = payload.solution
+            complaint.solution_by_id = current.id
+            complaint.solution_at = utcnow()
+            complaint.status = ComplaintStatus.resolved.value
+            write_audit(db, current, "complaint.solution.provided", "complaint", complaint.id, {"solution_by_id": current.id})
+    else:
+        complaint.solution_text = payload.solution
+        complaint.solution_by_id = current.id
+        complaint.solution_at = utcnow()
+        complaint.status = ComplaintStatus.resolved.value
+        write_audit(db, current, "complaint.solution.provided", "complaint", complaint.id, {"solution_by_id": current.id})
     db.commit()
     db.refresh(complaint)
     return complaint
