@@ -16,10 +16,10 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from uuid import uuid4
 
-from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
-from app.models import Complaint, ComplaintStatus, Priority, ProblemGroup
+from app.audit import write_audit
+from app.models import Complaint, ComplaintStatus, Notification, Priority, ProblemGroup, User, utcnow
 
 
 CORE_PROBLEM_SIMILARITY_THRESHOLD = 0.40
@@ -117,6 +117,7 @@ def assign_complaint_to_group(
     db: Session,
     complaint: Complaint,
     threshold: float = CORE_PROBLEM_SIMILARITY_THRESHOLD,
+    force_new: bool = False,
 ) -> GroupAssignment:
     """Find/create the canonical ProblemGroup and attach the complaint.
 
@@ -136,6 +137,12 @@ def assign_complaint_to_group(
 
     best_group: ProblemGroup | None = None
     best_score = 0.0
+
+    # The student has already been shown similar active problems. When they
+    # explicitly choose "Continue creating new", never merge this complaint
+    # into an existing ProblemGroup.
+    if force_new:
+        groups = []
 
     for group in groups:
         score = problem_similarity(
@@ -238,3 +245,63 @@ def recalculate_group(db: Session, group: ProblemGroup) -> ProblemGroup:
     ):
         member.affected_users = group.affected_users
     return group
+
+
+def resolve_problem_group(
+    db: Session,
+    group: ProblemGroup,
+    solution: str,
+    actor: User,
+) -> ProblemGroup:
+    """Resolve one real-world problem and propagate the solution to every member.
+
+    A ProblemGroup is the canonical department work item. Each member still
+    keeps its own student complaint/ticket, so every student can review the
+    same authoritative resolution and submit independent feedback.
+    """
+    complaints = (
+        db.query(Complaint)
+        .filter(
+            Complaint.problem_group_id == group.id,
+            Complaint.deleted_at.is_(None),
+        )
+        .all()
+    )
+    if not complaints:
+        return group
+
+    now = utcnow()
+    for complaint in complaints:
+        complaint.solution_text = solution
+        complaint.solution_by_id = actor.id
+        complaint.solution_at = now
+        complaint.status = ComplaintStatus.resolved.value
+        write_audit(
+            db,
+            actor,
+            "complaint.solution.provided",
+            "complaint",
+            complaint.id,
+            {"solution_by_id": actor.id, "problem_group_id": str(group.id)},
+        )
+
+        student = db.get(User, complaint.student_id)
+        if student:
+            db.add(
+                Notification(
+                    user_id=student.id,
+                    complaint_id=complaint.id,
+                    channel="in_app",
+                    recipient=student.email,
+                    subject=f"Your complaint has been resolved: {group.title}",
+                    body=solution,
+                )
+            )
+
+    group.solution_text = solution
+    group.solution_by_id = actor.id
+    group.solution_at = now
+    group.status = ComplaintStatus.resolved.value
+    recalculate_group(db, group)
+    return group
+

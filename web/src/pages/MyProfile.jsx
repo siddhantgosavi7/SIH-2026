@@ -668,10 +668,8 @@ export function MyProfile() {
         method: 'POST',
         headers: { 'Idempotency-Key': crypto.randomUUID() },
         body: JSON.stringify({
-          department: form.get('department'),
           title: form.get('title'),
           description: form.get('description'),
-          priority: form.get('priority'),
         }),
       });
       formEl.reset();
@@ -870,18 +868,6 @@ export function MyProfile() {
                 ) : (
                   <form onSubmit={createComplaint}>
                     <p className="helper" style={{ marginBottom: '12px' }}>Describe issue clearly. Priority and routing remain subject to authorized review.</p>
-                    <select name="department" defaultValue="Hostel" required>
-                      <option value="Hostel">Hostel</option>
-                      <option value="CSE">CSE</option>
-                      <option value="AIML">AIML</option>
-                      <option value="CSBS">CSBS</option>
-                      <option value="Mechanical">Mechanical</option>
-                      <option value="Electrical">Electrical</option>
-                      <option value="ENTC">ENTC</option>
-                      <option value="Biotech">Biotech</option>
-                      <option value="Exam Cell">Exam Cell</option>
-                      <option value="Canteen">Canteen</option>
-                    </select>
                     <input name="title" placeholder="Title" required />
                     <textarea
                       name="description"
@@ -899,13 +885,6 @@ export function MyProfile() {
                     <p style={{ textAlign: 'right', fontSize: '11px', color: '#94a3b8', margin: '-4px 0 8px' }}>
                       {descText.length} / 1000
                     </p>
-                    <select name="priority" defaultValue="">
-                      <option value="" disabled>Priority</option>
-                      <option value="low">Low</option>
-                      <option value="normal">Normal</option>
-                      <option value="high">High</option>
-                      <option value="urgent">Urgent</option>
-                    </select>
                     <button style={{ width: '100%', marginTop: '4px', backgroundColor: '#176b87', color: '#fff', fontWeight: 700, fontSize: '15px' }}>Create</button>
                   </form>
                 )}

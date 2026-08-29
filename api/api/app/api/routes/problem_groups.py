@@ -10,10 +10,8 @@ from app.models import (
     Complaint,
     ComplaintStatus,
     ProblemGroup,
-    Notification,
     Role,
     User,
-    utcnow,
 )
 from app.rbac import require_role
 from app.schemas import (
@@ -23,7 +21,7 @@ from app.schemas import (
     ProblemStudentOut,
     SolutionIn,
 )
-from app.services.problem_grouping import get_group_for_department, recalculate_group
+from app.services.problem_grouping import get_group_for_department, recalculate_group, resolve_problem_group
 
 router = APIRouter(prefix="/staff/problems", tags=["department problems"])
 
@@ -140,30 +138,25 @@ def get_problem_group(
     db.commit()
 
     return ProblemGroupDetailOut(
-        **{
-            field: getattr(group, field)
-            for field in (
-                "id",
-                "problem_code",
-                "title",
-                "description",
-                "department",
-                "complaint_count",
-                "affected_users",
-                "priority",
-                "status",
-                "solution_text",
-                "solution_at",
-                "created_at",
-                "updated_at",
-            )
-        },
-        students=list(students_by_id.values()),
-        complaints=[
-            ProblemComplaintOut.model_validate(c)
-            for c in complaints
-        ],
-    )
+    id=str(group.id),
+    problem_code=group.problem_code,
+    title=group.title,
+    description=group.description,
+    department=group.department,
+    complaint_count=group.complaint_count,
+    affected_users=group.affected_users,
+    priority=group.priority,
+    status=group.status,
+    solution_text=group.solution_text,
+    solution_at=group.solution_at,
+    created_at=group.created_at,
+    updated_at=group.updated_at,
+    students=list(students_by_id.values()),
+    complaints=[
+        ProblemComplaintOut.model_validate(c)
+        for c in complaints
+    ],
+)
 
 
 @router.put("/{problem_id}/solution", response_model=ProblemGroupDetailOut)
@@ -195,39 +188,8 @@ def solve_problem_group(
     if not complaints:
         raise HTTPException(status_code=409, detail="problem has no active complaints")
 
-    now = utcnow()
-    for complaint in complaints:
-        complaint.solution_text = payload.solution
-        complaint.solution_by_id = current.id
-        complaint.solution_at = now
-        complaint.status = ComplaintStatus.resolved.value
-
-        # Each complaint holder gets the same authoritative department answer.
-        if complaint.student_id:
-            student = db.get(User, complaint.student_id)
-            if student:
-                db.add(
-                    Notification(
-                        user_id=student.id,
-                        complaint_id=complaint.id,
-                        channel="in_app",
-                        recipient=student.email,
-                        subject=f"Your complaint has been resolved: {group.title}",
-                        body=payload.solution,
-                    )
-                )
-
-    group.solution_text = payload.solution
-    group.solution_by_id = current.id
-    group.solution_at = now
-    group.status = ComplaintStatus.resolved.value
-
-    # Keep aggregate counters consistent.
-    recalculate_group(db, group)
-    group.status = ComplaintStatus.resolved.value
-
+    resolve_problem_group(db, group, payload.solution, current)
     db.commit()
     db.refresh(group)
 
-    # Reuse detail endpoint logic after commit.
     return get_problem_group(problem_id, current, db)
