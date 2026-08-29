@@ -15,6 +15,8 @@ export function Login() {
     if (token) {
       if (session?.role === 'admin') {
         navigate('/admin', { replace: true });
+      } else if (session?.role === 'staff') {
+        navigate('/department', { replace: true });
       } else {
         navigate('/myProfile', { replace: true });
       }

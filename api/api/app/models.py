@@ -133,6 +133,9 @@ class ProblemGroup(Base):
     complaint_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     affected_users: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     priority: Mapped[str] = mapped_column(String(32), default=Priority.normal.value, nullable=False)
+    urgency_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    impact_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    priority_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default=ComplaintStatus.open.value, nullable=False)
     solution_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     solution_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -141,9 +144,17 @@ class ProblemGroup(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     complaints: Mapped[list["Complaint"]] = relationship(
+        "Complaint",
         back_populates="problem_group",
+        cascade="all, delete-orphan",
         foreign_keys="Complaint.problem_group_id",
     )
+    
+    @property
+    def category(self) -> str | None:
+        if self.complaints:
+            return self.complaints[0].category
+        return None
     solution_by: Mapped["User | None"] = relationship(foreign_keys=[solution_by_id])
 
 

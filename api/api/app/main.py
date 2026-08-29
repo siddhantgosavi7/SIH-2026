@@ -504,6 +504,14 @@ async def create_complaint(
         affected_users=1,
         source="web",
     )
+    
+    if internal.category:
+        complaint.category = internal.category
+    if internal.priority:
+        complaint.priority = internal.priority
+    if internal.priority_reasons:
+        complaint.priority_reasons = internal.priority_reasons
+
     db.add(complaint)
     db.flush()
 
@@ -515,10 +523,19 @@ async def create_complaint(
     assignment = assign_complaint_to_group(db, complaint)
     complaint.affected_users = assignment.group.affected_users
 
-    # Re-apply priority using the group-wide impact rather than only the
-    # incoming student's single complaint.
-    text_tokens = classify_complaint(db, complaint)
-    apply_priority(complaint, text_tokens)
+    # Re-apply priority using the group-wide impact. If the LLM assigned a lower
+    # priority but the group has massive impact, automatically boost it.
+    if complaint.affected_users >= 50 and complaint.priority in ("low", "normal", "high"):
+        complaint.priority = Priority.urgent.value
+        if not complaint.priority_reasons:
+            complaint.priority_reasons = []
+        complaint.priority_reasons.append(f"Escalated due to massive impact: {complaint.affected_users} users affected")
+    elif complaint.affected_users >= 10 and complaint.priority in ("low", "normal"):
+        complaint.priority = Priority.high.value
+        if not complaint.priority_reasons:
+            complaint.priority_reasons = []
+        complaint.priority_reasons.append(f"Escalated due to impact: {complaint.affected_users} users affected")
+
     recalculate_group(db, assignment.group)
 
     assignee = (

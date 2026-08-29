@@ -5,8 +5,7 @@ from app.models import User, Role
 from app.security import hash_password
 
 db_url = settings.database_url
-if "@postgres:" in db_url:
-    db_url = db_url.replace("@postgres:", "@localhost:")
+# Do not replace postgres with localhost if running inside docker
 
 engine = create_engine(db_url)
 SessionLocal = sessionmaker(bind=engine)

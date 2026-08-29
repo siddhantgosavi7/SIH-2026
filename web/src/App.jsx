@@ -7,11 +7,13 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { MyProfile } from './pages/MyProfile';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { DepartmentQueue } from './pages/DepartmentQueue';
+import { ResolveComplaint } from './pages/ResolveComplaint';
 import './styles.css';
 
 function DashboardEntry() {
   const { session } = useAuth();
-  return <Navigate to={session?.role === 'admin' ? '/admin' : '/myProfile'} replace />;
+  return <Navigate to={session?.role === 'admin' ? '/admin' : session?.role === 'staff' ? '/department' : '/myProfile'} replace />;
 }
 
 function ToastContainer() {
@@ -55,6 +57,22 @@ export function App() {
             element={
               <ProtectedRoute>
                 <MyProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/department"
+            element={
+              <ProtectedRoute role="staff">
+                <DepartmentQueue />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/department/problems/:id/resolve"
+            element={
+              <ProtectedRoute role="staff">
+                <ResolveComplaint />
               </ProtectedRoute>
             }
           />

@@ -50,7 +50,7 @@ def _student_out(user: User) -> ProblemStudentOut:
 
 
 def _summary_query(db: Session, department: str | None):
-    query = db.query(ProblemGroup).filter(
+    query = db.query(ProblemGroup).options(joinedload(ProblemGroup.complaints)).filter(
         ProblemGroup.status.in_([
             ComplaintStatus.open.value,
             ComplaintStatus.in_progress.value,

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.models import Complaint
 from app.pipeline.duplicate_detector import find_similar_complaints
 from app.services.department_classifier import predict_department
+from app.services.llm import analyze_complaint_with_llm
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,9 @@ class InternalComplaintPayload:
     affected_users: int
     similar_complaints_count: int
     similar_complaint_ids: tuple[str, ...]
+    category: str | None = None
+    priority: str | None = None
+    priority_reasons: list[str] | None = None
 
 
 def build_payload(db: Session, title: str, description: str) -> InternalComplaintPayload:
@@ -35,7 +39,24 @@ def build_payload(db: Session, title: str, description: str) -> InternalComplain
     """
     clean_title = title.strip()
     clean_description = description.strip()
-    department = predict_department(f"{clean_title} {clean_description}")
+    
+    allowed_departments = [
+        "Hostel", "CSE", "AIML", "CSBS", "Mechanical", "Electrical", 
+        "ENTC", "Biotech", "Exam Cell", "Canteen", "General Review"
+    ]
+    
+    llm_result = analyze_complaint_with_llm(clean_title, clean_description, allowed_departments)
+    
+    if llm_result:
+        department = llm_result.get("department", "General Review")
+        category = llm_result.get("category")
+        priority = llm_result.get("priority")
+        priority_reasons = llm_result.get("priority_reasons", [])
+    else:
+        department = predict_department(f"{clean_title} {clean_description}")
+        category = None
+        priority = None
+        priority_reasons = None
 
     matches = find_similar_complaints(
         db,
@@ -57,4 +78,7 @@ def build_payload(db: Session, title: str, description: str) -> InternalComplain
         affected_users=1 + len(distinct_student_ids),
         similar_complaints_count=len(matches),
         similar_complaint_ids=tuple(complaint.id for complaint, _score in matches),
+        category=category,
+        priority=priority,
+        priority_reasons=priority_reasons,
     )

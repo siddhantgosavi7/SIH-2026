@@ -159,9 +159,13 @@ class ProblemGroupSummaryOut(BaseModel):
     title: str
     description: str
     department: str
+    category: str | None = None
     complaint_count: int
     affected_users: int
     priority: str
+    urgency_score: float
+    impact_score: float
+    priority_score: float
     status: str
     solution_text: str | None = None
     solution_at: datetime | None = None

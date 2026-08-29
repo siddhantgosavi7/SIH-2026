@@ -11,6 +11,15 @@ def analyze_complaint(db: Session, complaint: Complaint) -> None:
     """Run the synchronous complaint analysis stages before persistence."""
     ensure_default_policies(db)
     text = f"{complaint.title} {complaint.description}"
-    text_tokens = classify_complaint(db, complaint)
-    apply_priority(complaint, text_tokens)
+    if not complaint.category:
+        text_tokens = classify_complaint(db, complaint)
+        apply_priority(complaint, text_tokens)
+        
+    if not complaint.sla_due_at:
+        from app.models import DepartmentPolicy, utcnow
+        from datetime import timedelta
+        policy = db.query(DepartmentPolicy).filter_by(name=complaint.department).first()
+        sla_hours = policy.sla_hours if policy else 48
+        complaint.sla_due_at = utcnow() + timedelta(hours=sla_hours)
+        
     detect_duplicates(db, complaint, text)
