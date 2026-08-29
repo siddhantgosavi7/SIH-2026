@@ -6,7 +6,16 @@ import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { MyProfile } from './pages/MyProfile';
-import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminLayout } from './admin/AdminLayout';
+import { AdminHome } from './pages/admin/AdminHome';
+import { AdminProblems } from './pages/admin/AdminProblems';
+import { AdminProblemDetail } from './pages/admin/AdminProblemDetail';
+import { AdminComplaints } from './pages/admin/AdminComplaints';
+import { AdminComplaintDetail } from './pages/admin/AdminComplaintDetail';
+import { AdminStudents } from './pages/admin/AdminStudents';
+import { AdminStaff } from './pages/admin/AdminStaff';
+import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
+import { AdminProfile } from './pages/admin/AdminProfile';
 import './styles.css';
 
 function DashboardEntry() {
@@ -46,10 +55,20 @@ export function App() {
             path="/admin"
             element={
               <ProtectedRoute role="admin">
-                <AdminDashboard />
+                <AdminLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<AdminHome />} />
+            <Route path="problems" element={<AdminProblems />} />
+            <Route path="problems/:id" element={<AdminProblemDetail />} />
+            <Route path="complaints" element={<AdminComplaints />} />
+            <Route path="complaints/:id" element={<AdminComplaintDetail />} />
+            <Route path="students" element={<AdminStudents />} />
+            <Route path="staff" element={<AdminStaff />} />
+            <Route path="audit-logs" element={<AdminAuditLogs />} />
+            <Route path="profile" element={<AdminProfile />} />
+          </Route>
           <Route
             path="/myProfile"
             element={
