@@ -1,248 +1,461 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ChevronLeft, Lightbulb, Sparkles, Send, Bold, Italic, List, Link as LinkIcon, Image as ImageIcon, BarChart2, CheckCircle2, Copy, Download, Share2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import {
+  ChevronLeft, CheckCircle2, ThumbsUp, ThumbsDown,
+  MessageSquare, Activity, Clock, RefreshCw, Send,
+  AlertTriangle, RotateCcw, Trash2, User, Shield, Paperclip, File as FileIcon, Upload
+} from 'lucide-react';
+
+function timeAgo(dateStr) {
+  const diff = Math.round((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60)    return `${diff}s ago`;
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+const STATUS_STYLES = {
+  open:        { bg: '#FEF2F2', color: '#DC2626', label: 'Open' },
+  in_progress: { bg: '#FFF7ED', color: '#EA580C', label: 'In Progress' },
+  resolved:    { bg: '#F0FDF4', color: '#16A34A', label: 'Resolved' },
+  closed:      { bg: '#F3F4F6', color: '#6B7280', label: 'Closed' },
+};
 
 export function UserComplaintDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { api } = useAuth();
-  
-  const [complaint, setComplaint] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [reply, setReply] = useState('');
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const data = await api(`/complaints/${id}`);
-        setComplaint(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  const [complaint,  setComplaint]  = useState(null);
+  const [solution,   setSolution]   = useState(null);
+  const [comments,   setComments]   = useState([]);
+  const [timeline,   setTimeline]   = useState([]);
+  const [attachments, setAttachments] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [tab,        setTab]        = useState('comments');
+
+  // Actions state
+  const [feedback,   setFeedback]   = useState(null); // 'accepted' | 'rejected'
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [commentBody, setCommentBody] = useState('');
+  const [reopenReason, setReopenReason] = useState('');
+  const [showReopen, setShowReopen] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+
+  // Loading states
+  const [sendingComment, setSendingComment] = useState(false);
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [sendingReopen,  setSendingReopen]  = useState(false);
+  const [deleting,       setDeleting]       = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [c, cmts, tl, att] = await Promise.all([
+        api(`/complaints/${id}`),
+        api(`/complaints/${id}/comments`),
+        api(`/complaints/${id}/timeline`),
+        api(`/complaints/${id}/attachments`).catch(() => []),
+      ]);
+      setComplaint(c);
+      setComments(cmts || []);
+      setTimeline(tl || []);
+      setAttachments(att || []);
+
+      // Load solution separately (may 404 if not resolved yet)
+      if (c.status === 'resolved' || c.solution_text) {
+        try {
+          const sol = await api(`/complaints/${id}/solution`);
+          setSolution(sol);
+        } catch { setSolution(null); }
       }
+
+      // Pre-fill feedback state if already given
+      if (c.feedback_accepted !== null && c.feedback_accepted !== undefined) {
+        setFeedback(c.feedback_accepted ? 'accepted' : 'rejected');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    fetchData();
   }, [id, api]);
 
-  if (loading || !complaint) {
-    return <div style={{ padding: '32px' }}>Loading...</div>;
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
+  async function postComment() {
+    if (!commentBody.trim()) return;
+    setSendingComment(true);
+    try {
+      const c = await api(`/complaints/${id}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ body: commentBody }),
+      });
+      setComments(prev => [...prev, c]);
+      setCommentBody('');
+    } catch (e) { console.error(e); }
+    finally { setSendingComment(false); }
   }
 
-  const isResolved = complaint.status === 'resolved' || complaint.status === 'closed';
-  const isHigh = complaint.priority === 'Critical' || complaint.priority === 'Urgent' || complaint.priority === 'High';
-  const badgeColor = isHigh ? '#FEE2E2' : '#FFEDD5';
-  const badgeText = isHigh ? '#EF4444' : '#F97316';
+  async function submitFeedback(accepted) {
+    setSendingFeedback(true);
+    try {
+      await api(`/complaints/${id}/feedback`, {
+        method: 'POST',
+        body: JSON.stringify({ accepted, comment: feedbackComment || null }),
+      });
+      setFeedback(accepted ? 'accepted' : 'rejected');
+      await fetchAll();
+    } catch (e) { console.error(e); }
+    finally { setSendingFeedback(false); }
+  }
+
+  async function doReopen() {
+    if (!reopenReason.trim()) return;
+    setSendingReopen(true);
+    try {
+      await api(`/complaints/${id}/reopen`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: reopenReason }),
+      });
+      setShowReopen(false);
+      await fetchAll();
+    } catch (e) { console.error(e); }
+    finally { setSendingReopen(false); }
+  }
+
+  async function doDelete() {
+    setDeleting(true);
+    try {
+      await api(`/complaints/${id}`, { method: 'DELETE' });
+      navigate('/user/dashboard');
+    } catch (e) { console.error(e); setDeleting(false); }
+  }
+
+  async function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      // Wait, api() handles JSON by default. We need a custom fetch for FormData
+      const token = localStorage.getItem('token');
+      const res = await fetch(`http://localhost:8000/complaints/${id}/attachments`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      await fetchAll();
+    } catch (e) { console.error(e); }
+    finally { setUploadingFile(false); }
+  }
+
+  if (loading || !complaint) {
+    return (
+      <div style={{ maxWidth: '860px', margin: '0 auto', padding: '40px 24px' }}>
+        <div style={{ height: '24px', width: '120px', backgroundColor: '#f1f2f7', borderRadius: '6px', marginBottom: '24px', animation: 'pulse 1.5s infinite' }} />
+        <div style={{ height: '200px', backgroundColor: '#f1f2f7', borderRadius: '16px', animation: 'pulse 1.5s infinite' }} />
+      </div>
+    );
+  }
+
+  const st = STATUS_STYLES[complaint.status] || STATUS_STYLES.open;
+  const isResolved = complaint.status === 'resolved';
+  const isClosed   = complaint.status === 'closed';
+  const solutionText = solution?.solution_text || complaint.solution_text;
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', paddingTop: '32px' }}>
+    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '32px 24px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+
+      {/* Back */}
       <button
         onClick={() => navigate('/user/dashboard')}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: '#64748B',
-          fontSize: '14px',
-          fontWeight: 600,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          cursor: 'pointer',
-          padding: 0,
-          marginBottom: '24px'
-        }}
+        style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', marginBottom: '20px', padding: 0 }}
       >
-        <ChevronLeft size={16} /> Back to Complaints
+        <ChevronLeft size={15} /> Back to Dashboard
       </button>
 
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-          {isResolved ? 'Improved Solution' : 'Complaint Detail & Input'}
-        </h1>
-        <p style={{ margin: 0, color: '#64748B', fontSize: '14px' }}>
-          {isResolved ? 'View improved solution and next steps' : 'View details and add thoughts / suggestions'}
-        </p>
+      {/* Header */}
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: '#9295a0', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>
+            {complaint.department} · {complaint.category || 'General'}
+          </div>
+          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#000', letterSpacing: '-0.02em', lineHeight: 1.3 }}>
+            {complaint.title}
+          </h1>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
+            <span style={{
+              padding: '4px 12px', borderRadius: '999px',
+              backgroundColor: st.bg, color: st.color,
+              fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em'
+            }}>{st.label}</span>
+            <span style={{ fontSize: '11px', color: '#9295a0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={11} /> Submitted {timeAgo(complaint.created_at)}
+            </span>
+            {complaint.priority && (
+              <span style={{ fontSize: '11px', color: '#9295a0' }}>Priority: <strong>{complaint.priority}</strong></span>
+            )}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+          <button onClick={fetchAll} style={{ background: 'none', border: '1px solid #e7e8ef', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', color: '#6B7280' }}>
+            <RefreshCw size={13} />
+          </button>
+          {!isResolved && !isClosed && (
+            <button
+              onClick={() => setShowDelete(true)}
+              style={{ background: 'none', border: '1px solid #FCA5A5', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', color: '#DC2626' }}
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Parent Card */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
-          borderRadius: '16px',
-          padding: '20px 24px',
-          marginBottom: '24px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-        }}
-      >
-        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6', flexShrink: 0, marginRight: '24px' }}>
-          <Lightbulb size={20} />
-        </div>
-        
-        <div style={{ flex: 1 }}>
-          <h3 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
-            {complaint.title}
-          </h3>
-          <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>{complaint.department || 'General'}</span>
-            <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#CBD5E1' }} />
-            <span>SLA: 24h</span>
-          </div>
-        </div>
+      {/* Description */}
+      <div style={{ backgroundColor: '#fff', border: '1px solid #e7e8ef', borderRadius: '14px', padding: '20px 24px', marginBottom: '20px', fontSize: '13px', color: '#4b5563', lineHeight: 1.75 }}>
+        {complaint.description}
+      </div>
 
-        {isResolved ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>Status</span>
-            <div
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: '1px solid #BBF7D0',
-                backgroundColor: '#F0FDF4',
-                color: '#16A34A',
-                fontWeight: 700,
-                fontSize: '12px',
-              }}
-            >
-              Resolved
-            </div>
+      {/* ── RESOLVED: Show solution + feedback ── */}
+      {isResolved && (
+        <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '14px', padding: '24px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+            <CheckCircle2 size={20} color="#16A34A" />
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#15803D' }}>Resolution from Department</h2>
           </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, marginBottom: '6px' }}>Priority</span>
-              <div
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '100px',
-                  backgroundColor: badgeColor,
-                  color: badgeText,
-                  fontWeight: 700,
-                  fontSize: '12px',
-                }}
-              >
-                {complaint.priority || 'Medium'}
+
+          <div style={{ fontSize: '13px', color: '#166534', lineHeight: 1.75, marginBottom: '20px' }}>
+            {solutionText || 'The department has marked this complaint as resolved. No additional notes were provided.'}
+          </div>
+
+          {/* Feedback section */}
+          {feedback ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', backgroundColor: '#fff', borderRadius: '10px', fontSize: '12px', fontWeight: 700, color: feedback === 'accepted' ? '#16A34A' : '#DC2626' }}>
+              {feedback === 'accepted' ? <ThumbsUp size={14} /> : <ThumbsDown size={14} />}
+              You marked this resolution as {feedback === 'accepted' ? 'Helpful ✓' : 'Not Helpful ✗'}
+              {complaint.feedback_comment && (
+                <span style={{ color: '#6B7280', fontWeight: 400, marginLeft: '8px' }}>"{complaint.feedback_comment}"</span>
+              )}
+            </div>
+          ) : (
+            <div style={{ backgroundColor: '#fff', borderRadius: '10px', padding: '14px 16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#374151', marginBottom: '10px' }}>Was this resolution helpful?</div>
+              <input
+                value={feedbackComment}
+                onChange={e => setFeedbackComment(e.target.value)}
+                placeholder="Optional comment…"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e7e8ef', fontSize: '12px', outline: 'none', marginBottom: '10px', boxSizing: 'border-box' }}
+              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => submitFeedback(true)}
+                  disabled={sendingFeedback}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#16A34A', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+                >
+                  <ThumbsUp size={13} /> Yes, it helped
+                </button>
+                <button
+                  onClick={() => submitFeedback(false)}
+                  disabled={sendingFeedback}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#DC2626', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+                >
+                  <ThumbsDown size={13} /> Not helpful
+                </button>
               </div>
             </div>
+          )}
 
+          {/* Reopen button */}
+          <div style={{ marginTop: '14px' }}>
             <button
+              onClick={() => setShowReopen(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '7px 14px', cursor: 'pointer', fontSize: '11px', fontWeight: 700, color: '#6B7280' }}
+            >
+              <RotateCcw size={12} /> Issue not fixed? Reopen
+            </button>
+            {showReopen && (
+              <div style={{ marginTop: '10px', backgroundColor: '#fff', border: '1px solid #FCA5A5', borderRadius: '10px', padding: '14px 16px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#DC2626', marginBottom: '8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <AlertTriangle size={13} /> Explain why the issue is not resolved
+                </div>
+                <textarea
+                  value={reopenReason}
+                  onChange={e => setReopenReason(e.target.value)}
+                  placeholder="Describe what's still wrong…"
+                  rows={3}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e7e8ef', fontSize: '12px', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+                />
+                <button
+                  onClick={doReopen}
+                  disabled={sendingReopen || !reopenReason.trim()}
+                  style={{ marginTop: '8px', padding: '8px 16px', backgroundColor: '#DC2626', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}
+                >
+                  {sendingReopen ? 'Submitting…' : 'Submit Reopen Request'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Comments & Timeline tabs ── */}
+      <div style={{ backgroundColor: '#fff', border: '1px solid #e7e8ef', borderRadius: '14px', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #e7e8ef' }}>
+          {[
+            { key: 'comments', label: 'Discussion', icon: MessageSquare, count: comments.length },
+            { key: 'attachments', label: 'Attachments', icon: Paperclip, count: attachments.length },
+            { key: 'timeline', label: 'Activity',   icon: Activity,     count: timeline.length },
+          ].map(({ key, label, icon: Icon, count }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '100px',
-                border: '1px solid #E2E8F0',
-                backgroundColor: '#FFFFFF',
-                color: '#3B82F6',
-                fontWeight: 700,
-                fontSize: '13px',
-                cursor: 'pointer',
+                flex: 1, padding: '13px 16px', border: 'none', background: 'none', cursor: 'pointer',
+                fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+                borderBottom: tab === key ? '2px solid #000' : '2px solid transparent',
+                color: tab === key ? '#000' : '#9295a0',
               }}
             >
-              <Sparkles size={16} /> AI Demo
+              <Icon size={13} /> {label}
+              <span style={{ padding: '1px 7px', borderRadius: '999px', backgroundColor: tab === key ? '#000' : '#e7e8ef', color: tab === key ? '#fff' : '#6B7280', fontSize: '9px', fontWeight: 900 }}>
+                {count}
+              </span>
             </button>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
 
-      {isResolved ? (
-        /* Resolved State: Improved Solution Green Box */
-        <div style={{ backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '16px', padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: '#16A34A' }}>
-            <CheckCircle2 size={24} />
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Improved Solution</h2>
-          </div>
-          
-          <div style={{ color: '#166534', fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
-            <p style={{ margin: '0 0 16px' }}>
-              {complaint.solution_text || 'The issue was caused due to a faulty component. We have replaced the part and tested it thoroughly. The situation is now stable.'}
-            </p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                'Identified the root cause area',
-                'Checked the relevant equipment',
-                'Replaced the faulty parts',
-                'Verified normal operational levels'
-              ].map((step, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 500 }}>
-                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#22C55E', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <CheckCircle2 size={12} strokeWidth={4} />
+        <div style={{ padding: '20px' }}>
+          {tab === 'comments' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {comments.length === 0 && (
+                <div style={{ fontSize: '12px', color: '#9295a0', fontStyle: 'italic', textAlign: 'center', padding: '16px 0' }}>
+                  No comments yet. Start the conversation.
+                </div>
+              )}
+              {comments.map(cm => (
+                <div key={cm.id} style={{
+                  display: 'flex', gap: '10px', padding: '12px 14px',
+                  backgroundColor: cm.author_role === 'staff' ? '#f4f5ff' : '#fafafb',
+                  borderRadius: '10px',
+                }}>
+                  <div style={{
+                    width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0,
+                    backgroundColor: cm.author_role === 'staff' ? '#000' : '#e7e8ef',
+                    display: 'grid', placeItems: 'center',
+                  }}>
+                    {cm.author_role === 'staff' ? <Shield size={14} color="#fff" /> : <User size={14} color="#6b7280" />}
                   </div>
-                  Step {idx + 1}: {step}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#000' }}>
+                        {cm.author_name} {cm.author_role === 'staff' && <span style={{ fontSize: '9px', color: '#6B7280', fontWeight: 600, marginLeft: '4px' }}>Staff</span>}
+                      </span>
+                      <span style={{ fontSize: '10px', color: '#9295a0' }}>{timeAgo(cm.created_at)}</span>
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#4b5563', lineHeight: 1.6 }}>{cm.body}</div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Comment input */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                <input
+                  value={commentBody}
+                  onChange={e => setCommentBody(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && postComment()}
+                  placeholder="Add a comment or question…"
+                  style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #e7e8ef', fontSize: '13px', outline: 'none' }}
+                />
+                <button
+                  onClick={postComment}
+                  disabled={sendingComment || !commentBody.trim()}
+                  style={{ padding: '0 16px', backgroundColor: '#000', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  {sendingComment ? <RefreshCw size={14} className="spin" /> : <Send size={14} />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {tab === 'attachments' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>Attached Files</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#F3F4F6', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                  {uploadingFile ? <Clock size={14} className="spin" /> : <Upload size={14} />}
+                  {uploadingFile ? 'Uploading…' : 'Upload File'}
+                  <input type="file" style={{ display: 'none' }} onChange={handleFileUpload} disabled={uploadingFile} />
+                </label>
+              </div>
+
+              {attachments.length === 0 && (
+                <div style={{ fontSize: '12px', color: '#9295a0', fontStyle: 'italic', textAlign: 'center', padding: '16px 0' }}>
+                  No attachments yet.
+                </div>
+              )}
+              {attachments.map(att => (
+                <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', backgroundColor: '#fafafb', border: '1px solid #e7e8ef', borderRadius: '8px' }}>
+                  <FileIcon size={20} color="#6B7280" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{att.filename || 'File'}</div>
+                    <div style={{ fontSize: '11px', color: '#6B7280' }}>Uploaded {timeAgo(att.created_at)}</div>
+                  </div>
+                  <a href={att.url || '#'} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}>Download</a>
                 </div>
               ))}
             </div>
-          </div>
+          )}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #BBF7D0', paddingTop: '16px', color: '#166534' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#166534', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                <Copy size={16} /> Copy
-              </button>
-              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#166534', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                <Download size={16} /> Download
-              </button>
-              <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: 'none', color: '#166534', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                <Share2 size={16} /> Share
-              </button>
+          {tab === 'timeline' && (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {timeline.length === 0 && (
+                <div style={{ fontSize: '12px', color: '#9295a0', fontStyle: 'italic', textAlign: 'center', padding: '16px 0' }}>No activity recorded.</div>
+              )}
+              {timeline.map((event, i) => (
+                <div key={event.id} style={{ display: 'flex', gap: '12px', paddingBottom: '14px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '18px', flexShrink: 0 }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#000', marginTop: '4px', flexShrink: 0 }} />
+                    {i < timeline.length - 1 && <div style={{ flex: 1, width: '1px', backgroundColor: '#e7e8ef', marginTop: '5px' }} />}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#22242d', fontFamily: 'monospace' }}>{event.action}</div>
+                    <div style={{ fontSize: '10px', color: '#9295a0', marginTop: '2px' }}>{timeAgo(event.created_at)}</div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>Helpful?</span>
-              <button style={{ background: 'transparent', border: 'none', color: '#166534', cursor: 'pointer' }}><ThumbsUp size={16} /></button>
-              <button style={{ background: 'transparent', border: 'none', color: '#166534', cursor: 'pointer' }}><ThumbsDown size={16} /></button>
-            </div>
-          </div>
+          )}
         </div>
-      ) : (
-        /* Unresolved State: Input Box */
-        <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '16px', display: 'flex', flexDirection: 'column' }}>
-          <textarea
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            placeholder="Type your thoughts, suggestions or solution..."
-            style={{
-              width: '100%',
-              minHeight: '160px',
-              padding: '24px',
-              border: 'none',
-              borderRadius: '16px 16px 0 0',
-              resize: 'none',
-              outline: 'none',
-              fontSize: '15px',
-              color: '#0F172A',
-            }}
-          />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #E2E8F0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: '#64748B' }}>
-              <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><Bold size={18} /></button>
-              <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><Italic size={18} /></button>
-              <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><List size={18} /></button>
-              <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><LinkIcon size={18} /></button>
-              <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><ImageIcon size={18} /></button>
-              <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><BarChart2 size={18} /></button>
+      </div>
+
+      {/* ── Delete Confirmation Modal ── */}
+      {showDelete && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 100, backdropFilter: 'blur(6px)' }}>
+          <div style={{ backgroundColor: '#fff', borderRadius: '16px', padding: '28px', width: 'min(420px, 90vw)', boxShadow: '0 25px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+              <AlertTriangle size={20} color="#DC2626" />
+              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 800 }}>Delete this complaint?</h2>
             </div>
-            <button
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '10px 24px',
-                backgroundColor: '#3D4FFF',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Send <Send size={16} />
-            </button>
+            <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: 1.6, margin: '0 0 20px' }}>
+              This action is permanent and cannot be undone. The complaint and all associated data will be removed.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowDelete(false)} style={{ padding: '9px 18px', border: '1px solid #e7e8ef', borderRadius: '8px', background: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>Cancel</button>
+              <button
+                onClick={doDelete}
+                disabled={deleting}
+                style={{ padding: '9px 18px', backgroundColor: '#DC2626', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}
+              >
+                {deleting ? 'Deleting…' : 'Yes, Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}

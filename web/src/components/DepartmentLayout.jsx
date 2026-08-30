@@ -1,102 +1,80 @@
 import React from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, MessageSquare, LogOut, Menu, X, Shield, Activity, ClipboardList, Mail, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Logo } from './Logo';
+import '../admin/admin.css';
+
+const navItems = [
+  { to: '/department', label: 'Problem Queue', icon: LayoutDashboard, end: true },
+  { to: '/department/complaints', label: 'Complaints', icon: ClipboardList },
+  { to: '/department/suggestions', label: 'Admin Suggestions', icon: MessageSquare },
+  { to: '/department/inbox', label: 'Messages', icon: Mail },
+  { to: '/department/notifications', label: 'Notifications', icon: Bell },
+];
 
 export function DepartmentLayout() {
   const { session, logout } = useAuth();
-  const location = useLocation();
+  const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
 
-  const navItems = [
-    { name: 'solve complain', path: '/department' },
-    { name: 'admin suggestions', path: '/department/suggestions' },
-  ];
+  function signOut() {
+    logout();
+    navigate('/');
+  }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#FFFFFF', color: '#000000', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      
-      {/* Sidebar */}
-      <aside
-        style={{
-          width: '280px',
-          borderRight: '2px solid #E5E7EB',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '32px 0'
-        }}
-      >
-        {/* Header Logo */}
-        <div style={{ padding: '0 32px', marginBottom: '48px' }}>
-          <Link to="/" style={{ textDecoration: 'none', color: '#000000' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 900, margin: 0, letterSpacing: '0.02em' }}>
-              SAASLY
-            </h1>
-          </Link>
+    <div className="admin-app">
+      <button className="admin-mobile-toggle" onClick={() => setMobileOpen(v => !v)} aria-label="Toggle navigation">
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+      <aside className={`admin-sidebar ${mobileOpen ? 'is-open' : ''}`}>
+        <div className="admin-brand">
+          <Logo />
         </div>
 
-        {/* Navigation */}
-        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== '/department' && location.pathname.startsWith(item.path));
-            const isStrictActive = item.path === '/department' ? location.pathname === '/department' || location.pathname.match(/^\/department\/complaints/) : isActive;
+        <div className="admin-user-card">
+          <div className="admin-avatar"><Shield size={18} /></div>
+          <div className="admin-user-copy">
+            <strong>{session?.username || session?.email || 'Staff Member'}</strong>
+            <span>Department Staff</span>
+          </div>
+          <span className="online-dot" />
+        </div>
 
-            return (
-              <Link
-                key={item.name}
-                to={item.path}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 32px',
-                  textDecoration: 'none',
-                  fontSize: '15px',
-                  fontWeight: isStrictActive ? 700 : 500,
-                  color: isStrictActive ? '#000000' : '#4B5563',
-                  backgroundColor: 'transparent',
-                }}
-              >
-                {item.name}
-                {/* Circle Indicator */}
-                <div style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  backgroundColor: isStrictActive ? '#000000' : 'transparent',
-                  border: isStrictActive ? 'none' : '2px solid #9CA3AF'
-                }} />
-              </Link>
-            );
-          })}
+        <div className="admin-nav-label">Workspace</div>
+        <nav className="admin-nav" onClick={() => setMobileOpen(false)}>
+          {navItems.map(({ to, label, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className={({ isActive }) => `admin-nav-item ${isActive ? 'active' : ''}`}>
+              <Icon size={17} />
+              <span>{label}</span>
+            </NavLink>
+          ))}
         </nav>
 
-        {/* Footer actions */}
-        <div style={{ padding: '0 32px', marginTop: 'auto' }}>
-          <button
-            onClick={logout}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 0',
-              border: 0,
-              backgroundColor: 'transparent',
-              color: '#9CA3AF',
-              fontSize: '15px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              textAlign: 'left',
-              width: '100%',
-            }}
-          >
-            logout
-          </button>
+        <div className="admin-sidebar-bottom">
+          <div className="system-status">
+            <span><i /> System online</span>
+            <Activity size={14} />
+          </div>
+          <button className="admin-logout" onClick={signOut}><LogOut size={15} /> Sign out</button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main style={{ flex: 1, height: '100vh', overflowY: 'auto', backgroundColor: '#F9FAFB' }}>
-        <Outlet />
+      <main className="admin-main">
+        <header className="admin-topbar">
+          <div>
+            <div className="admin-kicker">DEPARTMENT DASHBOARD</div>
+            <div className="admin-top-title">Staff grievance management</div>
+          </div>
+          <div className="admin-top-actions">
+            <div className="admin-top-profile">
+              <span className="mini-avatar">{(session?.username || 'S').slice(0, 1).toUpperCase()}</span>
+              <span>{session?.username || 'Staff'}</span>
+            </div>
+          </div>
+        </header>
+        <div className="admin-content"><Outlet /></div>
       </main>
     </div>
   );

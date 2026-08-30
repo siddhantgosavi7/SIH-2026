@@ -38,8 +38,8 @@ export function UserProblemList() {
   }
 
   const isHigh = complaint.priority === 'Critical' || complaint.priority === 'Urgent' || complaint.priority === 'High';
-  const badgeColor = isHigh ? '#FEE2E2' : '#FFEDD5';
-  const badgeText = isHigh ? '#EF4444' : '#F97316';
+  const badgeColor = isHigh ? '#E5E7EB' : '#F3F4F6';
+  const badgeText = isHigh ? '#4B5563' : '#4B5563';
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', paddingTop: '32px' }}>
@@ -48,7 +48,7 @@ export function UserProblemList() {
         style={{
           background: 'transparent',
           border: 'none',
-          color: '#64748B',
+          color: '#6B7280',
           fontSize: '14px',
           fontWeight: 600,
           display: 'flex',
@@ -63,10 +63,10 @@ export function UserProblemList() {
       </button>
 
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+        <h1 style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: 800, color: '#000000', letterSpacing: '-0.02em' }}>
           Problem List
         </h1>
-        <p style={{ margin: 0, color: '#64748B', fontSize: '14px' }}>List of problems raised under this complaint</p>
+        <p style={{ margin: 0, color: '#6B7280', fontSize: '14px' }}>List of problems raised under this complaint</p>
       </div>
 
       {/* Parent Complaint Card */}
@@ -75,40 +75,40 @@ export function UserProblemList() {
           display: 'flex',
           alignItems: 'center',
           backgroundColor: '#FFFFFF',
-          border: '1px solid #E2E8F0',
+          border: '1px solid #E5E7EB',
           borderRadius: '16px',
           padding: '20px 24px',
           marginBottom: '32px',
           boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
         }}
       >
-        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3B82F6', flexShrink: 0, marginRight: '24px' }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4B5563', flexShrink: 0, marginRight: '24px' }}>
           <Lightbulb size={20} />
         </div>
         
         <div style={{ flex: 1 }}>
-          <h3 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
+          <h3 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#000000' }}>
             {complaint.title}
           </h3>
-          <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '13px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span>{complaint.department || 'General'}</span>
-            <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#CBD5E1' }} />
+            <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#D1D5DB' }} />
             <span>SLA: 24h</span>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, marginBottom: '6px' }}>Priority</span>
+            <span style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600, marginBottom: '6px' }}>Priority</span>
             <span style={{ 
               display: 'inline-block', 
-              backgroundColor: isHigh ? '#FEF2F2' : '#F8FAFC', 
-              color: isHigh ? '#EF4444' : '#64748B', 
+              backgroundColor: isHigh ? '#F9FAFB' : '#F9FAFB', 
+              color: isHigh ? '#4B5563' : '#6B7280', 
               padding: '4px 10px', 
               borderRadius: '20px', 
               fontSize: '12px', 
               fontWeight: 600,
-              border: `1px solid ${isHigh ? '#FCA5A5' : '#E2E8F0'}`
+              border: `1px solid ${isHigh ? '#D1D5DB' : '#E5E7EB'}`
             }}>
               {complaint.priority || 'Medium'}
             </span>
@@ -116,16 +116,16 @@ export function UserProblemList() {
           
           {complaint.category && (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, marginBottom: '6px' }}>Category</span>
+              <span style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600, marginBottom: '6px' }}>Category</span>
               <span style={{ 
                 display: 'inline-block', 
-                backgroundColor: '#F8FAFC', 
-                color: '#334155', 
+                backgroundColor: '#F9FAFB', 
+                color: '#4B5563', 
                 padding: '4px 10px', 
                 borderRadius: '20px', 
                 fontSize: '12px', 
                 fontWeight: 600,
-                border: '1px solid #E2E8F0'
+                border: '1px solid #E5E7EB'
               }}>
                 {complaint.category}
               </span>
@@ -143,15 +143,15 @@ export function UserProblemList() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              backgroundColor: index === 0 ? '#F8FAFC' : '#FFFFFF',
-              border: index === 0 ? '1px solid #E2E8F0' : '1px solid transparent',
-              borderBottom: index !== 0 ? '1px solid #E2E8F0' : '1px solid #E2E8F0',
+              backgroundColor: index === 0 ? '#F9FAFB' : '#FFFFFF',
+              border: index === 0 ? '1px solid #E5E7EB' : '1px solid transparent',
+              borderBottom: index !== 0 ? '1px solid #E5E7EB' : '1px solid #E5E7EB',
               borderRadius: index === 0 ? '12px' : '0',
               padding: '16px 24px',
               cursor: 'pointer',
             }}
           >
-            <div style={{ flex: 1, fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>
+            <div style={{ flex: 1, fontSize: '14px', fontWeight: 600, color: '#000000' }}>
               {prob.title}
             </div>
             
@@ -160,15 +160,15 @@ export function UserProblemList() {
                 style={{
                   padding: '4px 12px',
                   borderRadius: '100px',
-                  backgroundColor: '#F1F5F9',
-                  color: '#64748B',
+                  backgroundColor: '#F3F4F6',
+                  color: '#6B7280',
                   fontWeight: 600,
                   fontSize: '12px',
                 }}
               >
                 {prob.status}
               </div>
-              <ChevronRight size={18} color="#94A3B8" />
+              <ChevronRight size={18} color="#9CA3AF" />
             </div>
           </div>
         ))}

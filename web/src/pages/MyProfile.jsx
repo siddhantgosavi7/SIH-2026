@@ -10,9 +10,6 @@ import { useAuth } from '../context/AuthContext';
 import { AdminDashboard } from './AdminDashboard';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const ACADEMIC_DEPARTMENTS = [
-  'Computer Science', 'Mechanical', 'Civil', 'Electronics', 'Information Technology', 'Chemical',
-];
 const DIVISIONS = ['A', 'B', 'C', 'D'];
 const YEAR_SEMESTERS = [
   '1st Year', '2nd Year', '3rd Year', '4th Year',
@@ -45,6 +42,7 @@ function StudentInfoTab({ api, setMessage, onProfileSaved }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [prnError, setPrnError] = useState('');
+  const [departments, setDepartments] = useState([]);
   const [form, setForm] = useState({
     full_name: '', department: '', prn_number: '', division: '',
     roll_no: '', year_semester: '', contact_number: '',
@@ -52,7 +50,15 @@ function StudentInfoTab({ api, setMessage, onProfileSaved }) {
 
   useEffect(() => {
     fetchProfile();
+    fetchDepartments();
   }, []);
+
+  async function fetchDepartments() {
+    try {
+      const data = await api('/departments');
+      setDepartments(data);
+    } catch (e) { console.error('Failed to load departments', e); }
+  }
 
   async function fetchProfile() {
     setLoading(true);
@@ -145,7 +151,7 @@ function StudentInfoTab({ api, setMessage, onProfileSaved }) {
     return (
       <section className="panel" style={{ maxWidth: '640px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-          <BookOpen size={22} color="#176b87" />
+          <BookOpen size={22} color="#000000" />
           <h2 style={{ margin: 0 }}>Academic Profile</h2>
         </div>
         <p className="helper" style={{ marginBottom: '20px' }}>
@@ -164,7 +170,7 @@ function StudentInfoTab({ api, setMessage, onProfileSaved }) {
           ].map(([label, value]) => (
             <React.Fragment key={label}>
               <span className="info-label">{label}</span>
-              <span style={{ fontWeight: 600, color: '#1d2630' }}>{value}</span>
+              <span style={{ fontWeight: 600, color: '#1F2937' }}>{value}</span>
             </React.Fragment>
           ))}
         </div>
@@ -184,7 +190,7 @@ function StudentInfoTab({ api, setMessage, onProfileSaved }) {
   return (
     <form className="panel form" style={{ maxWidth: '640px' }} onSubmit={handleSave}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <BookOpen size={22} color="#176b87" />
+        <BookOpen size={22} color="#000000" />
         <h2 style={{ margin: 0 }}>
           {profile ? 'Edit Academic Profile' : 'Set Up Your Academic Profile'}
         </h2>
@@ -207,7 +213,7 @@ function StudentInfoTab({ api, setMessage, onProfileSaved }) {
       </label>
       <select name="department" required value={form.department} onChange={handleChange}>
         <option value="">Select department…</option>
-        {ACADEMIC_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+        {departments.map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
       </select>
 
       {/* PRN */}
@@ -272,9 +278,9 @@ function AdminUserRow({ user, studentProfiles }) {
   return (
     <div
       style={{
-        backgroundColor: '#F8FAFC',
+        backgroundColor: '#F9FAFB',
         borderRadius: '12px',
-        border: '1px solid #F1F5F9',
+        border: '1px solid #F3F4F6',
         overflow: 'hidden',
         transition: 'box-shadow 0.15s',
       }}
@@ -289,23 +295,23 @@ function AdminUserRow({ user, studentProfiles }) {
         }}
       >
         <div style={{ textAlign: 'left', flex: 1 }}>
-          <span style={{ fontWeight: 700, fontSize: '14px', color: '#0B0B12', display: 'block' }}>
+          <span style={{ fontWeight: 700, fontSize: '14px', color: '#000000', display: 'block' }}>
             {profile ? profile.full_name : user.email}
           </span>
-          <span style={{ fontSize: '13px', color: '#64748B' }}>
+          <span style={{ fontSize: '13px', color: '#6B7280' }}>
             Role: {user.role}
             {user.username ? ` · @${user.username}` : ''}
             {profile ? ` · PRN: ${profile.prn_number}` : ''}
           </span>
         </div>
-        {open ? <ChevronUp size={16} color="#64748B" /> : <ChevronDown size={16} color="#64748B" />}
+        {open ? <ChevronUp size={16} color="#6B7280" /> : <ChevronDown size={16} color="#6B7280" />}
       </button>
 
       {/* Expanded detail */}
       {open && (
         <div
           style={{
-            borderTop: '1px solid #E2E8F0',
+            borderTop: '1px solid #E5E7EB',
             padding: '16px',
             background: '#ffffff',
           }}
@@ -328,13 +334,13 @@ function AdminUserRow({ user, studentProfiles }) {
                 ].map(([label, val]) => (
                   <React.Fragment key={label}>
                     <span className="info-label">{label}</span>
-                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#1d2630' }}>{val}</span>
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#1F2937' }}>{val}</span>
                   </React.Fragment>
                 ))}
               </div>
             </>
           ) : (
-            <p style={{ fontSize: '13px', color: '#94A3B8', fontStyle: 'italic' }}>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic' }}>
               No academic profile submitted by this student yet.
             </p>
           )}
@@ -381,7 +387,7 @@ function MessageModal({ recipient, complaint, api, setMessage, onClose }) {
       <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <MessageSquare size={20} color="#176b87" />
+            <MessageSquare size={20} color="#000000" />
             <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Send Message</h2>
           </div>
           <button className="ghost" onClick={onClose} style={{ minHeight: 'auto', padding: '6px', borderRadius: '50%' }}>
@@ -390,13 +396,13 @@ function MessageModal({ recipient, complaint, api, setMessage, onClose }) {
         </div>
         <form onSubmit={handleSend}>
           <div className="modal-body">
-            <div style={{ marginBottom: '12px', padding: '10px 14px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>TO:</span>
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginLeft: '8px' }}>
+            <div style={{ marginBottom: '12px', padding: '10px 14px', backgroundColor: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
+              <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600 }}>TO:</span>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#000000', marginLeft: '8px' }}>
                 {recipient.full_name || recipient.username || recipient.email}
               </span>
               {complaint && (
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
                   Re: {complaint.title}
                 </div>
               )}
@@ -406,7 +412,7 @@ function MessageModal({ recipient, complaint, api, setMessage, onClose }) {
               placeholder="Subject (optional)"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '12px', fontSize: '14px' }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #E5E7EB', marginBottom: '12px', fontSize: '14px' }}
             />
             <textarea
               placeholder="Type your message..."
@@ -414,14 +420,14 @@ function MessageModal({ recipient, complaint, api, setMessage, onClose }) {
               onChange={(e) => setBody(e.target.value)}
               required
               rows={5}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px', resize: 'vertical' }}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #E5E7EB', fontSize: '14px', resize: 'vertical' }}
             />
           </div>
           <div className="modal-footer">
             <button
               type="submit"
               disabled={sending}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#176b87' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#000000' }}
             >
               <Send size={15} /> {sending ? 'Sending...' : 'Send Message'}
             </button>
@@ -491,7 +497,7 @@ function MessagesInbox({ api, setMessage }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '16px', minHeight: '400px' }}>
       {/* Sidebar */}
-      <div style={{ borderRight: '1px solid #e2e8f0', paddingRight: '12px' }}>
+      <div style={{ borderRight: '1px solid #E5E7EB', paddingRight: '12px' }}>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
           <button
             className={`tab${activeView === 'inbox' ? ' active' : ''}`}
@@ -510,7 +516,7 @@ function MessagesInbox({ api, setMessage }) {
         </div>
         <div style={{ overflowY: 'auto', maxHeight: '500px' }}>
           {messages.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', padding: '12px' }}>
+            <p style={{ fontSize: '13px', color: '#9CA3AF', fontStyle: 'italic', padding: '12px' }}>
               No messages {activeView === 'inbox' ? 'received' : 'sent'} yet.
             </p>
           ) : (
@@ -521,20 +527,20 @@ function MessagesInbox({ api, setMessage }) {
                 style={{
                   width: '100%', textAlign: 'left', padding: '12px', marginBottom: '6px',
                   backgroundColor: selectedMessage?.id === msg.id ? '#e0f2fe' : msg.is_read || activeView === 'sent' ? '#ffffff' : '#f0f9ff',
-                  border: `1px solid ${selectedMessage?.id === msg.id ? '#0ea5e9' : '#e2e8f0'}`,
+                  border: `1px solid ${selectedMessage?.id === msg.id ? '#0ea5e9' : '#E5E7EB'}`,
                   borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
                 }}
               >
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#000000', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                   <span>{activeView === 'inbox' ? msg.sender_name : msg.recipient_name}</span>
                   {!msg.is_read && activeView === 'inbox' && (
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0ea5e9', display: 'inline-block' }} />
                   )}
                 </div>
-                <div style={{ fontSize: '12px', color: '#475569', fontWeight: msg.is_read || activeView === 'sent' ? 400 : 600 }}>
+                <div style={{ fontSize: '12px', color: '#4B5563', fontWeight: msg.is_read || activeView === 'sent' ? 400 : 600 }}>
                   {msg.subject}
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '4px' }}>
                   {new Date(msg.created_at).toLocaleDateString()} {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </button>
@@ -547,24 +553,24 @@ function MessagesInbox({ api, setMessage }) {
       <div style={{ padding: '12px' }}>
         {selectedMessage ? (
           <div>
-            <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '16px' }}>
+            <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: '16px', marginBottom: '16px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 700 }}>{selectedMessage.subject}</h3>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <div style={{ fontSize: '13px', color: '#6B7280' }}>
                 <span style={{ fontWeight: 600 }}>From:</span> {selectedMessage.sender_name} &lt;{selectedMessage.sender_id}&gt;
               </div>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <div style={{ fontSize: '13px', color: '#6B7280' }}>
                 <span style={{ fontWeight: 600 }}>To:</span> {selectedMessage.recipient_name}
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+              <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>
                 {new Date(selectedMessage.created_at).toLocaleString()}
               </div>
             </div>
-            <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#334155', whiteSpace: 'pre-wrap' }}>
+            <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#4B5563', whiteSpace: 'pre-wrap' }}>
               {selectedMessage.body}
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9CA3AF' }}>
             <p>Select a message to view</p>
           </div>
         )}
@@ -587,7 +593,43 @@ export function MyProfile() {
   const [caseSearch, setCaseSearch] = useState('');
   const [caseStatusFilter, setCaseStatusFilter] = useState('all'); // 'all' | 'open' | 'resolved'
   const [descText, setDescText] = useState(''); // controlled textarea for char counter
+  const [titleText, setTitleText] = useState('');
+  const [similarProblems, setSimilarProblems] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (session?.role !== 'student' || (!titleText && !descText)) {
+      setSimilarProblems([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const dept = studentOwnProfile?.department || '';
+        const query = new URLSearchParams({ title: titleText, description: descText, department: dept });
+        const res = await api(`/problems/similar?${query.toString()}`);
+        setSimilarProblems(res || []);
+      } catch (e) {
+        setSimilarProblems([]);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [titleText, descText, studentOwnProfile, api, session]);
+
+  async function joinProblem(id) {
+    try {
+      await api(`/problems/${id}/report`, {
+        method: 'POST',
+        body: JSON.stringify({ title: titleText, description: descText })
+      });
+      setTitleText('');
+      setDescText('');
+      setSimilarProblems([]);
+      setMessage('Successfully joined the problem');
+      await load();
+    } catch (e) {
+      setMessage(e.message);
+    }
+  }
 
   function handleSignOut() {
     logout();
@@ -668,12 +710,15 @@ export function MyProfile() {
         method: 'POST',
         headers: { 'Idempotency-Key': crypto.randomUUID() },
         body: JSON.stringify({
-          title: form.get('title'),
-          description: form.get('description'),
+          title: titleText,
+          description: descText,
+          force_new: true, // As requested in the plan
         }),
       });
       formEl.reset();
+      setTitleText('');
       setDescText('');
+      setSimilarProblems([]);
       setMessage('Complaint submitted successfully');
       await load();
     } catch (err) {
@@ -824,7 +869,7 @@ export function MyProfile() {
       {activeTab === 'messages' && (
         <div style={{ padding: '24px clamp(18px, 4vw, 48px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <Mail size={22} color="#176b87" />
+            <Mail size={22} color="#000000" />
             <h2 style={{ margin: 0 }}>Messages</h2>
           </div>
           <MessagesInbox api={api} setMessage={setMessage} />
@@ -840,35 +885,32 @@ export function MyProfile() {
               <div className="panel form">
                 <ClipboardList size={22} />
                 <h2>Submit a grievance</h2>
-                {!profileReady ? (
-                  <>
+                <div style={{ position: 'relative' }}>
+                  {!profileReady && (
                     <div style={{
-                      marginBottom: '18px', padding: '14px 16px', borderRadius: '10px',
-                      backgroundColor: '#fff7ed', border: '1.5px solid #fb923c',
-                      display: 'flex', alignItems: 'center', gap: '10px',
+                      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                      backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                      backdropFilter: 'blur(2px)',
+                      zIndex: 10,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: '8px', padding: '20px', textAlign: 'center',
+                      border: '1.5px dashed #fb923c'
                     }}>
-                      <span style={{ fontSize: '20px' }}>🔒</span>
-                      <div>
-                        <strong style={{ fontSize: '13px', color: '#92400e', display: 'block' }}>Academic Profile Required</strong>
-                        <span style={{ fontSize: '12px', color: '#78350f' }}>
-                          Fill in your{' '}
-                          <button type="button" onClick={() => setActiveTab('my-info')}
-                            style={{ background: 'none', border: 'none', color: '#176b87', fontWeight: 700, cursor: 'pointer', padding: 0, fontSize: '12px', textDecoration: 'underline' }}>
-                            My Info
-                          </button>{' '}
-                          (Full Name, PRN, Department…) before submitting.
-                        </span>
-                      </div>
+                      <span style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</span>
+                      <strong style={{ fontSize: '15px', color: '#1F2937', marginBottom: '6px' }}>Form Locked</strong>
+                      <span style={{ fontSize: '13px', color: '#78350f', marginBottom: '16px' }}>
+                        You must complete your Academic Profile before you can submit a grievance.
+                      </span>
+                      <button type="button" onClick={() => setActiveTab('my-info')}
+                        style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: '#000000', color: '#fff', fontWeight: 700, fontSize: '13px', border: 'none', cursor: 'pointer' }}>
+                        Complete My Profile Now
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setActiveTab('my-info')}
-                      style={{ width: '100%', padding: '10px', borderRadius: '8px', backgroundColor: '#176b87', color: '#fff', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer' }}>
-                      Go to My Info →
-                    </button>
-                  </>
-                ) : (
-                  <form onSubmit={createComplaint}>
+                  )}
+
+                  <form onSubmit={createComplaint} style={!profileReady ? { opacity: 0.4, pointerEvents: 'none' } : {}}>
                     <p className="helper" style={{ marginBottom: '12px' }}>Describe issue clearly. Priority and routing remain subject to authorized review.</p>
-                    <input name="title" placeholder="Title" required />
+                    <input name="title" placeholder="Title" required disabled={!profileReady} value={titleText} onChange={(e) => setTitleText(e.target.value)} />
                     <textarea
                       name="description"
                       placeholder="Describe issue"
@@ -878,16 +920,42 @@ export function MyProfile() {
                       value={descText}
                       onChange={(e) => setDescText(e.target.value)}
                       rows={5}
+                      disabled={!profileReady}
                     />
                     <p className="helper" style={{ marginTop: '-8px', fontSize: '11px' }}>
                       Min. 20 characters required. Provide specific details (e.g., location, dates, people involved).
                     </p>
-                    <p style={{ textAlign: 'right', fontSize: '11px', color: '#94a3b8', margin: '-4px 0 8px' }}>
+                    <p style={{ textAlign: 'right', fontSize: '11px', color: '#9CA3AF', margin: '-4px 0 8px' }}>
                       {descText.length} / 1000
                     </p>
-                    <button style={{ width: '100%', marginTop: '4px', backgroundColor: '#176b87', color: '#fff', fontWeight: 700, fontSize: '15px' }}>Create</button>
+
+                    {similarProblems.length > 0 && (
+                      <div style={{ backgroundColor: '#F3F4F6', borderRadius: '8px', padding: '16px', marginBottom: '16px', border: '1px solid #E5E7EB' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#1F2937', marginBottom: '12px' }}>
+                          <AlertCircle size={14} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '6px' }} />
+                          Existing similar issues
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {similarProblems.map(p => (
+                            <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', padding: '12px', borderRadius: '6px', border: '1px solid #E5E7EB' }}>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: '14px', fontWeight: 600, color: '#000000', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                                <div style={{ fontSize: '12px', color: '#6B7280' }}>{p.affected_users} students affected</div>
+                              </div>
+                              <button type="button" onClick={() => joinProblem(p.id)} style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: '#000000', color: '#FFFFFF', fontWeight: 600, fontSize: '12px', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                Join this problem
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <button disabled={!profileReady} style={{ width: '100%', marginTop: '4px', backgroundColor: !profileReady ? '#9CA3AF' : '#000000', color: '#FFFFFF', fontWeight: 700, fontSize: '15px', cursor: !profileReady ? 'not-allowed' : 'pointer', border: 'none', padding: '12px' }}>
+                      {similarProblems.length > 0 ? 'Submit as genuinely new' : 'Create'}
+                    </button>
                   </form>
-                )}
+                </div>
               </div>
             );
           })()}
@@ -916,7 +984,7 @@ export function MyProfile() {
 
               <div className="queue-controls">
                 <div className="search-box">
-                  <Search size={15} color="#94a3b8" />
+                  <Search size={15} color="#9CA3AF" />
                   <input
                     type="text"
                     placeholder="Search grievances..."
@@ -956,12 +1024,12 @@ export function MyProfile() {
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {/* Title row + status badge */}
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-                        <strong style={{ fontSize: '15px', color: '#0f172a', lineHeight: 1.3 }}>{item.title}</strong>
+                        <strong style={{ fontSize: '15px', color: '#000000', lineHeight: 1.3 }}>{item.title}</strong>
                         <span className={`badge-status ${item.status}`} style={{ flexShrink: 0 }}>{statusLabel}</span>
                       </div>
 
                       {/* Dept + Priority */}
-                      <div style={{ fontSize: '12px', color: '#475569' }}>
+                      <div style={{ fontSize: '12px', color: '#4B5563' }}>
                         Dept: <strong>{item.department}</strong>&nbsp;&nbsp; Priority: <strong>{item.priority}</strong>
                       </div>
 
@@ -1034,21 +1102,21 @@ export function MyProfile() {
                   <span className={`badge-status ${selectedComplaint.status}`}>
                     {selectedComplaint.status.replace('_', ' ')}
                   </span>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '2px 8px', borderRadius: '4px' }}>
                     Priority: {selectedComplaint.priority}
                   </span>
-                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94a3b8' }}>
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#9CA3AF' }}>
                     ID: {selectedComplaint.id.substring(0, 8)}...
                   </span>
                 </div>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#000000' }}>
                   {selectedComplaint.title}
                 </h2>
               </div>
               <button
                 className="ghost"
                 onClick={() => setSelectedComplaint(null)}
-                style={{ minHeight: 'auto', padding: '6px', borderRadius: '50%', color: '#64748b' }}
+                style={{ minHeight: 'auto', padding: '6px', borderRadius: '50%', color: '#6B7280' }}
               >
                 <X size={18} />
               </button>
@@ -1057,14 +1125,14 @@ export function MyProfile() {
             <div className="modal-body">
               {/* Describe Issue Section */}
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#176b87', fontWeight: 700, fontSize: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#000000', fontWeight: 700, fontSize: '14px' }}>
                   <FileText size={18} />
                   <span>Described Issue / Full Complaint Details</span>
                 </div>
                 <div className="issue-box">
                   {selectedComplaint.description || 'No description provided.'}
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px', fontSize: '12px', color: '#64748b' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px', fontSize: '12px', color: '#6B7280' }}>
                   <span>Department: <strong>{selectedComplaint.department}</strong></span>
                   {selectedComplaint.category && <span>Category: <strong>{selectedComplaint.category}</strong></span>}
                   {selectedComplaint.created_at && (
@@ -1078,7 +1146,7 @@ export function MyProfile() {
 
               {/* Submitter Info Card (Who sent this complaint) */}
               <div className="submitter-card">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', color: '#0d9488', fontWeight: 700, fontSize: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', color: '#0d9488', fontWeight: 700, fontSize: '14px', borderBottom: '1px solid #E5E7EB', paddingBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <UserCheck size={18} />
                     <span>Submitter Profile &amp; Academic Identity</span>
@@ -1102,7 +1170,7 @@ export function MyProfile() {
                 </div>
                 <div className="info-grid">
                   <span className="info-label">Full Name:</span>
-                  <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                  <span style={{ fontWeight: 700, color: '#000000' }}>
                     {selectedComplaint.student_name || 'Registered Student'}
                   </span>
 
@@ -1114,32 +1182,32 @@ export function MyProfile() {
                   </span>
 
                   <span className="info-label">Division:</span>
-                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                  <span style={{ fontWeight: 600, color: '#4B5563' }}>
                     {selectedComplaint.student_division || 'N/A'}
                   </span>
 
                   <span className="info-label">Roll No:</span>
-                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                  <span style={{ fontWeight: 600, color: '#4B5563' }}>
                     {selectedComplaint.student_roll_no || 'N/A'}
                   </span>
 
                   <span className="info-label">Department:</span>
-                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                  <span style={{ fontWeight: 600, color: '#4B5563' }}>
                     {selectedComplaint.student_department || selectedComplaint.department}
                   </span>
 
                   <span className="info-label">Year / Semester:</span>
-                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                  <span style={{ fontWeight: 600, color: '#4B5563' }}>
                     {selectedComplaint.student_year_semester || 'N/A'}
                   </span>
 
                   <span className="info-label">Contact No:</span>
-                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                  <span style={{ fontWeight: 600, color: '#4B5563' }}>
                     {selectedComplaint.student_contact || 'N/A'}
                   </span>
 
                   <span className="info-label">Email Address:</span>
-                  <span style={{ fontWeight: 600, color: '#334155' }}>
+                  <span style={{ fontWeight: 600, color: '#4B5563' }}>
                     {selectedComplaint.student_email || 'N/A'}
                   </span>
                 </div>
@@ -1202,17 +1270,17 @@ export function MyProfile() {
           }}
         >
           {/* Left Card: Audit Logs */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '32px', border: '1px solid #E2E8F0' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '32px', border: '1px solid #E5E7EB' }}>
             <Activity size={24} color="#0D9488" style={{ marginBottom: '8px', display: 'block' }} />
-            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#0B0B12', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#000000', margin: '0 0 4px 0' }}>
               System Audit &amp; Sign-in Activity Logs
             </h2>
-            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 20px 0' }}>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 20px 0' }}>
               Tracks user sign-ins, registrations, and administrative events.
             </p>
             <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '4px' }}>
               {auditLogs.length === 0 ? (
-                <p style={{ fontSize: '14px', color: '#94A3B8', fontStyle: 'italic' }}>No audit logs recorded yet.</p>
+                <p style={{ fontSize: '14px', color: '#9CA3AF', fontStyle: 'italic' }}>No audit logs recorded yet.</p>
               ) : (
                 auditLogs.map((log) => {
                   const actorEmail = log.event_metadata?.email
@@ -1222,9 +1290,9 @@ export function MyProfile() {
                     hour: '2-digit', minute: '2-digit', second: '2-digit',
                   });
                   return (
-                    <div key={log.id} style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '16px', border: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '14px', color: '#0B0B12' }}>{log.action} — {actorEmail}</span>
-                      <span style={{ fontSize: '13px', color: '#64748B' }}>Entity: {log.entity_type} · Time: {formattedTime}</span>
+                    <div key={log.id} style={{ backgroundColor: '#F9FAFB', borderRadius: '12px', padding: '16px', border: '1px solid #F3F4F6', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '14px', color: '#000000' }}>{log.action} — {actorEmail}</span>
+                      <span style={{ fontSize: '13px', color: '#6B7280' }}>Entity: {log.entity_type} · Time: {formattedTime}</span>
                     </div>
                   );
                 })
@@ -1233,20 +1301,20 @@ export function MyProfile() {
           </div>
 
           {/* Right Card: Registered Users with expandable student profiles */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '32px', border: '1px solid #E2E8F0' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '32px', border: '1px solid #E5E7EB' }}>
             <Users size={24} color="#0D9488" style={{ marginBottom: '8px', display: 'block' }} />
-            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#0B0B12', margin: '0 0 4px 0' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#000000', margin: '0 0 4px 0' }}>
               Registered Users
             </h2>
-            <p style={{ fontSize: '14px', color: '#64748B', margin: '0 0 6px 0' }}>
+            <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 6px 0' }}>
               Click a row to view academic profile details.
             </p>
-            <p style={{ fontSize: '12px', color: '#94A3B8', margin: '0 0 20px 0' }}>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '0 0 20px 0' }}>
               {studentProfiles.length} of {usersList.length} user{usersList.length !== 1 ? 's' : ''} have submitted academic profiles.
             </p>
             <div style={{ maxHeight: '600px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px' }}>
               {usersList.length === 0 ? (
-                <p style={{ fontSize: '14px', color: '#94A3B8', fontStyle: 'italic' }}>No registered users found.</p>
+                <p style={{ fontSize: '14px', color: '#9CA3AF', fontStyle: 'italic' }}>No registered users found.</p>
               ) : (
                 usersList.map((user) => (
                   <AdminUserRow key={user.id} user={user} studentProfiles={studentProfiles} />

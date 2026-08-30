@@ -85,7 +85,7 @@ export function AdminSuggestionsList() {
               <button
                 onClick={() => navigate(`/department/suggestions/${group.cases[0].id}`)}
                 style={{
-                  backgroundColor: '#22C55E', // Green
+                  backgroundColor: '#4B5563', // Green
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',

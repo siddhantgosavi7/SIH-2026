@@ -1,9 +1,8 @@
 import enum
 import uuid
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, Uuid, UniqueConstraint
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import Text as TextType, TypeDecorator
 
@@ -120,8 +119,8 @@ class ProblemGroup(Base):
 
     __tablename__ = "problem_groups"
 
-    id: Mapped[UUID] = mapped_column(
-    UUID(as_uuid=True),
+    id: Mapped[uuid.UUID] = mapped_column(
+    Uuid(as_uuid=True),
     primary_key=True,
     default=uuid.uuid4,
     )
@@ -171,8 +170,8 @@ class Complaint(Base):
     source: Mapped[str] = mapped_column(String(32), default="web", nullable=False)
     affected_users: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     assigned_to_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
-    problem_group_id: Mapped[UUID | None] = mapped_column(
-    UUID(as_uuid=True),
+    problem_group_id: Mapped[uuid.UUID | None] = mapped_column(
+    Uuid(as_uuid=True),
     ForeignKey("problem_groups.id"),
     index=True,
     nullable=True,

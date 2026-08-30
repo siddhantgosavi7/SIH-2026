@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, joinedload
@@ -110,29 +112,33 @@ def list_problem_groups(
         recalculate_group(db, group)
     db.commit()
 
-    return [
-    ProblemGroupSummaryOut(
-        id=str(group.id),
-        problem_code=group.problem_code,
-        title=group.title,
-        description=group.description,
-        department=group.department,
-        complaint_count=group.complaint_count,
-        affected_users=group.affected_users,
-        priority=group.priority,
-        status=group.status,
-        solution_text=group.solution_text,
-        solution_at=group.solution_at,
-        created_at=group.created_at,
-        updated_at=group.updated_at,
-    )
-    for group in groups
-]
+    def _to_summary(group: ProblemGroup) -> ProblemGroupSummaryOut:
+        return ProblemGroupSummaryOut(
+            id=str(group.id),
+            problem_code=group.problem_code,
+            title=group.title,
+            description=group.description,
+            department=group.department,
+            complaint_count=group.complaint_count,
+            affected_users=group.affected_users,
+            priority=group.priority,
+            status=group.status,
+            category=group.category,
+            urgency_score=group.urgency_score,
+            impact_score=group.impact_score,
+            priority_score=group.priority_score,
+            solution_text=group.solution_text,
+            solution_at=group.solution_at,
+            created_at=group.created_at,
+            updated_at=group.updated_at,
+        )
+
+    return [_to_summary(group) for group in groups]
 
 
 @router.get("/{problem_id}", response_model=ProblemGroupDetailOut)
 def get_problem_group(
-    problem_id: str,
+    problem_id: UUID,
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProblemGroupDetailOut:
@@ -167,30 +173,31 @@ def get_problem_group(
     db.commit()
 
     return ProblemGroupDetailOut(
-    id=str(group.id),
-    problem_code=group.problem_code,
-    title=group.title,
-    description=group.description,
-    department=group.department,
-    complaint_count=group.complaint_count,
-    affected_users=group.affected_users,
-    priority=group.priority,
-    status=group.status,
-    solution_text=group.solution_text,
-    solution_at=group.solution_at,
-    created_at=group.created_at,
-    updated_at=group.updated_at,
-    students=list(students_by_id.values()),
-    complaints=[
-        ProblemComplaintOut.model_validate(c)
-        for c in complaints
-    ],
-)
+        id=str(group.id),
+        problem_code=group.problem_code,
+        title=group.title,
+        description=group.description,
+        department=group.department,
+        complaint_count=group.complaint_count,
+        affected_users=group.affected_users,
+        priority=group.priority,
+        status=group.status,
+        category=group.category,
+        urgency_score=group.urgency_score,
+        impact_score=group.impact_score,
+        priority_score=group.priority_score,
+        solution_text=group.solution_text,
+        solution_at=group.solution_at,
+        created_at=group.created_at,
+        updated_at=group.updated_at,
+        students=list(students_by_id.values()),
+        complaints=[ProblemComplaintOut.model_validate(c) for c in complaints]
+    )
 
 
 @router.put("/{problem_id}/solution", response_model=ProblemGroupDetailOut)
 def solve_problem_group(
-    problem_id: str,
+    problem_id: UUID,
     payload: SolutionIn,
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),

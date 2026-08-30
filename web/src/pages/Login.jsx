@@ -116,13 +116,13 @@ export function Login() {
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: '#3D4FFF',
+            backgroundColor: '#000000',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 16px',
             color: '#ffffff',
-            boxShadow: '0 4px 12px rgba(61, 79, 255, 0.25)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
           }}
         >
           <Compass size={24} />
@@ -133,7 +133,7 @@ export function Login() {
           style={{
             fontSize: '26px',
             fontWeight: 800,
-            color: '#0B0B12',
+            color: '#000000',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
@@ -143,7 +143,7 @@ export function Login() {
         <p
           style={{
             fontSize: '14px',
-            color: '#64748b',
+            color: '#6B7280',
             margin: '0 0 28px 0',
             fontWeight: 500,
           }}
@@ -155,13 +155,13 @@ export function Login() {
         <form onSubmit={login} style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }}>
           {/* Username / Email Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
               Username
             </label>
             <div style={{ position: 'relative' }}>
               <User
                 size={18}
-                color="#94a3b8"
+                color="#9CA3AF"
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
@@ -173,11 +173,11 @@ export function Login() {
                 style={{
                   width: '100%',
                   borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid #D1D5DB',
                   padding: '12px 14px 12px 42px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#0B0B12',
+                  color: '#000000',
                   backgroundColor: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -188,13 +188,13 @@ export function Login() {
 
           {/* Password Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
               <Lock
                 size={18}
-                color="#94a3b8"
+                color="#9CA3AF"
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
@@ -207,11 +207,11 @@ export function Login() {
                 style={{
                   width: '100%',
                   borderRadius: '12px',
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid #D1D5DB',
                   padding: '12px 14px 12px 42px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#0B0B12',
+                  color: '#000000',
                   backgroundColor: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -221,7 +221,7 @@ export function Login() {
             {(errorMessage || message) && (
               <p
                 style={{
-                  color: errorMessage ? '#ef4444' : '#0F6E82',
+                  color: errorMessage ? '#4B5563' : '#0F6E82',
                   fontSize: '12px',
                   fontWeight: 600,
                   marginTop: '6px',
@@ -238,7 +238,7 @@ export function Login() {
             disabled={isSubmitting}
             style={{
               width: '100%',
-              backgroundColor: '#3D4FFF',
+              backgroundColor: '#000000',
               color: '#ffffff',
               fontWeight: 700,
               padding: '14px',
@@ -248,7 +248,7 @@ export function Login() {
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
               opacity: isSubmitting ? 0.7 : 1,
               marginTop: '8px',
-              boxShadow: '0 4px 14px rgba(61, 79, 255, 0.3)',
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
               transition: 'all 0.2s',
             }}
           >
@@ -258,15 +258,15 @@ export function Login() {
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', margin: '28px 0 20px' }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
-          <span style={{ padding: '0 12px', fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>or</span>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
+          <span style={{ padding: '0 12px', fontSize: '12px', color: '#9CA3AF', fontWeight: 500 }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
         </div>
 
         {/* Bottom Link */}
-        <p style={{ fontSize: '14px', color: '#64748b', margin: 0, fontWeight: 500 }}>
+        <p style={{ fontSize: '14px', color: '#6B7280', margin: 0, fontWeight: 500 }}>
           Don&apos;t have an account?{' '}
-          <Link to="/signup" style={{ color: '#3D4FFF', fontWeight: 700, textDecoration: 'none' }}>
+          <Link to="/signup" style={{ color: '#000000', fontWeight: 700, textDecoration: 'none' }}>
             Sign up for free
           </Link>
         </p>

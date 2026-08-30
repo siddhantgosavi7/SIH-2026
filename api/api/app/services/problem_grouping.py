@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
@@ -177,7 +177,7 @@ def assign_complaint_to_group(
     created = False
     if best_group is None or best_score < threshold:
         best_group = ProblemGroup(
-            id=str(uuid4()),
+            id=uuid4(),
             problem_code=f"PROB-{uuid4().hex[:8].upper()}",
             title=complaint.title,
             description=complaint.description,
@@ -245,7 +245,7 @@ def assign_complaint_to_group(
 
 def get_group_for_department(
     db: Session,
-    group_id: str,
+    group_id: UUID,
     department: str | None,
 ) -> ProblemGroup | None:
     query = db.query(ProblemGroup).filter(ProblemGroup.id == group_id)

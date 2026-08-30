@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import case, or_
 from sqlalchemy.orm import Session
@@ -186,7 +188,7 @@ def suggest_similar_problems(
 
 @router.get("/{problem_id}", response_model=ProblemGroupStudentOut)
 def get_existing_problem(
-    problem_id: str,
+    problem_id: UUID,
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProblemGroupStudentOut:
@@ -231,7 +233,7 @@ def get_existing_problem(
 
 @router.post("/{problem_id}/report", response_model=ProblemReportOut)
 def report_existing_problem(
-    problem_id: str,
+    problem_id: UUID,
     current: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProblemReportOut:

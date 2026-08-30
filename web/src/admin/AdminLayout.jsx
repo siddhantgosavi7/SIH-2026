@@ -2,20 +2,22 @@ import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Activity,
+  Bell,
   ClipboardList,
   FileText,
   GraduationCap,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   ScrollText,
   Settings,
   ShieldCheck,
-  Sparkles,
   Users,
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Logo } from '../components/Logo';
 import './admin.css';
 
 const nav = [
@@ -24,6 +26,8 @@ const nav = [
   { to: '/admin/complaints', label: 'Complaints', icon: ClipboardList },
   { to: '/admin/students', label: 'Students', icon: GraduationCap },
   { to: '/admin/staff', label: 'Staff', icon: Users },
+  { to: '/admin/inbox', label: 'Messages', icon: Mail },
+  { to: '/admin/notifications', label: 'Notifications', icon: Bell },
   { to: '/admin/audit-logs', label: 'Audit Logs', icon: ScrollText },
   { to: '/admin/profile', label: 'Admin Profile', icon: Settings },
 ];
@@ -45,11 +49,7 @@ export function AdminLayout() {
       </button>
       <aside className={`admin-sidebar ${mobileOpen ? 'is-open' : ''}`}>
         <div className="admin-brand">
-          <div className="admin-brand-mark"><Sparkles size={18} /></div>
-          <div>
-            <strong>GIOP</strong>
-            <span>Governance OS</span>
-          </div>
+          <Logo />
         </div>
 
         <div className="admin-user-card">

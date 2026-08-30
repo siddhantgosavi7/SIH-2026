@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { Shield, BookOpen, Mail, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Logo } from './Logo';
 
 export function UserLayout() {
   const { session } = useAuth();
@@ -14,37 +15,20 @@ export function UserLayout() {
   ];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#F9FAFB', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Sidebar */}
       <aside
         style={{
           width: '260px',
           backgroundColor: '#FFFFFF',
-          borderRight: '1px solid #E2E8F0',
+          borderRight: '1px solid #E5E7EB',
           display: 'flex',
           flexDirection: 'column',
           padding: '24px 16px',
         }}
       >
         {/* Logo */}
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', marginBottom: '40px', padding: '0 8px' }}>
-          <div
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '8px',
-              backgroundColor: '#3D4FFF',
-              color: '#ffffff',
-              fontWeight: 800,
-              fontSize: '14px',
-              display: 'grid',
-              placeItems: 'center',
-            }}
-          >
-            G
-          </div>
-          <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.03em', color: '#0B0B12' }}>GIOP</span>
-        </Link>
+        <Logo style={{ marginBottom: '40px', padding: '0 8px' }} />
 
         {/* Nav Links */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
@@ -62,7 +46,7 @@ export function UserLayout() {
                   padding: '10px 14px',
                   borderRadius: '10px',
                   textDecoration: 'none',
-                  color: isActive ? '#3D4FFF' : '#64748B',
+                  color: isActive ? '#000000' : '#6B7280',
                   backgroundColor: isActive ? '#EEF2FF' : 'transparent',
                   fontWeight: isActive ? 700 : 500,
                   fontSize: '14px',
@@ -77,14 +61,14 @@ export function UserLayout() {
         </nav>
 
         {/* User Profile */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 8px', borderTop: '1px solid #E2E8F0', marginTop: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 8px', borderTop: '1px solid #E5E7EB', marginTop: 'auto' }}>
           <div
             style={{
               width: '36px',
               height: '36px',
               borderRadius: '50%',
-              backgroundColor: '#E2E8F0',
-              color: '#475569',
+              backgroundColor: '#E5E7EB',
+              color: '#4B5563',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -96,10 +80,10 @@ export function UserLayout() {
             {session?.username ? session.username.substring(0, 2).toUpperCase() : 'ST'}
           </div>
           <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+            <div style={{ fontWeight: 700, fontSize: '13px', color: '#000000', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
               {session?.username || 'Student User'}
             </div>
-            <div style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+            <div style={{ fontSize: '12px', color: '#6B7280', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
               Student
             </div>
           </div>
@@ -109,8 +93,8 @@ export function UserLayout() {
       {/* Main Content */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Top bar with bell icon */}
-        <header style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 32px', backgroundColor: '#F8FAFC' }}>
-          <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748B' }}>
+        <header style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '0 32px', backgroundColor: '#F9FAFB' }}>
+          <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6B7280' }}>
             <Bell size={20} />
           </button>
         </header>

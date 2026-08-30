@@ -1,0 +1,26 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+export function Logo({ to = "/", style = {} }) {
+  return (
+    <Link to={to} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', ...style }}>
+      <div
+        style={{
+          width: '26px',
+          height: '26px',
+          borderRadius: '7px',
+          backgroundColor: '#000000',
+          color: '#ffffff',
+          fontWeight: 800,
+          fontSize: '13px',
+          display: 'grid',
+          placeItems: 'center',
+          flexShrink: 0
+        }}
+      >
+        G
+      </div>
+      <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.03em', color: '#000000' }}>GIOP</span>
+    </Link>
+  );
+}
