@@ -6,11 +6,12 @@ def test_get_departments(client):
     res = client.get("/departments")
     assert res.status_code == 200
     depts = res.json()
-    assert len(depts) == 10
+    assert len(depts) == 11
     dept_names = [d["name"] for d in depts]
     assert "Hostel" in dept_names
     assert "CSE" in dept_names
     assert "Canteen" in dept_names
+    assert "General Review" in dept_names
 
 
 def test_complaint_department_validation(client):

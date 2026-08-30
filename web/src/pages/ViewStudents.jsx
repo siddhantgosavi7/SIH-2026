@@ -61,7 +61,7 @@ export function ViewStudents() {
       {/* Main Container */}
       <div style={{
         backgroundColor: '#FFFFFF',
-        border: '4px solid #000000',
+        border: '4px solid var(--brand-primary)',
         borderRadius: '16px',
         padding: '32px',
         display: 'flex',
@@ -74,7 +74,7 @@ export function ViewStudents() {
         <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <div style={{ 
             flex: 1, 
-            border: '2px solid #000000', 
+            border: '2px solid var(--brand-primary)', 
             borderRadius: '8px', 
             padding: '24px',
             display: 'flex',

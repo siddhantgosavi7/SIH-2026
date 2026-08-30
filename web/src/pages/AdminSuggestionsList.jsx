@@ -37,7 +37,7 @@ export function AdminSuggestionsList() {
         {groupedCases.map((group, idx) => (
           <div key={idx} style={{
             backgroundColor: '#FFFFFF',
-            border: '4px solid #000000',
+            border: '4px solid var(--brand-primary)',
             borderRadius: '16px',
             padding: '24px',
             display: 'flex',
@@ -49,7 +49,7 @@ export function AdminSuggestionsList() {
             
             {/* Left: Stacked Box */}
             <div style={{ 
-              border: '2px solid #000000', 
+              border: '2px solid var(--brand-primary)', 
               borderRadius: '8px', 
               padding: '20px 24px', 
               width: '280px',
@@ -69,7 +69,7 @@ export function AdminSuggestionsList() {
             {/* Middle: The Problem Box */}
             <div style={{ 
               flex: 1, 
-              border: '2px solid #000000', 
+              border: '2px solid var(--brand-primary)', 
               borderRadius: '8px', 
               padding: '20px 24px',
               display: 'flex',

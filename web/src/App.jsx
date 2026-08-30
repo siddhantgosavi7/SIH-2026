@@ -19,6 +19,7 @@ import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStudentDetail } from './pages/admin/AdminStudentDetail';
 import { AdminStaff } from './pages/admin/AdminStaff';
 import { AdminProfile } from './pages/admin/AdminProfile';
+import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
 import { DepartmentLayout } from './components/DepartmentLayout';
 import { AdminSuggestionsList } from './pages/AdminSuggestionsList';
 import { AdminSuggestionDetail } from './pages/AdminSuggestionDetail';

@@ -57,6 +57,7 @@ from app.api.routes.student_problems import router as student_problems_router
 from app.services.problem_grouping import assign_complaint_to_group, recalculate_group, resolve_problem_group
 from app.pipeline.priority import apply_priority
 from app.pipeline.classifier import classify_complaint
+from app.pipeline.policies import ensure_default_policies
 
 DEPARTMENTS = [
     "Hostel",
@@ -69,6 +70,7 @@ DEPARTMENTS = [
     "Biotech",
     "Exam Cell",
     "Canteen",
+    "General Review",
 ]
 
 ALLOWED_ATTACHMENT_TYPES = {"application/pdf", "image/jpeg", "image/png", "text/plain"}
@@ -153,10 +155,9 @@ def bootstrap_staff(db: Session) -> None:
 
 
 def bootstrap_departments(db: Session) -> None:
-    for dept in DEPARTMENTS:
-        existing = db.query(DepartmentPolicy).filter(DepartmentPolicy.name == dept).first()
-        if not existing:
-            db.add(DepartmentPolicy(name=dept, category=dept, active=True))
+    # Delegate to ensure_default_policies so that keywords and sla_hours
+    # are seeded correctly from the canonical DEFAULT_POLICIES list.
+    ensure_default_policies(db)
     db.commit()
 
 
@@ -223,7 +224,7 @@ def register_student(payload: StudentRegister, db: Session = Depends(get_db)) ->
         username=username,
         hashed_password=hash_password(payload.password),
         role=Role.student.value,
-        department=None,
+        department=payload.department,
     )
     db.add(user)
     db.flush()

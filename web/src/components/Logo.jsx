@@ -9,7 +9,7 @@ export function Logo({ to = "/", style = {} }) {
           width: '26px',
           height: '26px',
           borderRadius: '7px',
-          backgroundColor: '#000000',
+          background: 'linear-gradient(135deg, #fb923c 0%, #e11d48 100%)',
           color: '#ffffff',
           fontWeight: 800,
           fontSize: '13px',

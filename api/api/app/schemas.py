@@ -25,6 +25,7 @@ class StudentRegister(BaseModel):
     username: str = Field(min_length=2, max_length=50)
     email: EmailStr
     password: str = Field(min_length=8)
+    department: str | None = None
 
     model_config = {"extra": "forbid"}
 

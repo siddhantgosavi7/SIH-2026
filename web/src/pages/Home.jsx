@@ -165,7 +165,7 @@ export function Home() {
                   type="button"
                   onClick={() => navigate('/login')}
                   style={{
-                    backgroundColor: '#000000',
+                    background: 'var(--brand-gradient)',
                     color: '#ffffff',
                     fontSize: '13px',
                     fontWeight: 600,
@@ -180,7 +180,7 @@ export function Home() {
                   type="button"
                   onClick={() => navigate('/signup')}
                   style={{
-                    backgroundColor: '#000000',
+                    background: 'var(--brand-gradient)',
                     color: '#ffffff',
                     fontSize: '13px',
                     fontWeight: 600,
@@ -217,7 +217,7 @@ export function Home() {
               top: '40px',
               width: '80px',
               height: '80px',
-              backgroundColor: '#000000',
+              background: 'var(--brand-gradient)',
               borderRadius: '20px',
               boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
             }}
@@ -230,7 +230,7 @@ export function Home() {
               top: '150px',
               width: '64px',
               height: '64px',
-              backgroundColor: '#000000',
+              background: 'var(--brand-gradient)',
               borderRadius: '16px',
               animationDelay: '1.8s',
             }}
@@ -290,7 +290,7 @@ export function Home() {
               position: 'absolute',
               right: '48px',
               top: '112px',
-              backgroundColor: '#000000',
+              background: 'var(--brand-gradient)',
               color: '#ffffff',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '14px',
@@ -330,7 +330,7 @@ export function Home() {
               top: '230px',
               width: '64px',
               height: '96px',
-              backgroundColor: '#000000',
+              background: 'var(--brand-gradient)',
               borderRadius: '20px',
               animationDelay: '4s',
             }}
@@ -343,7 +343,7 @@ export function Home() {
               top: '350px',
               width: '64px',
               height: '64px',
-              backgroundColor: '#000000',
+              background: 'var(--brand-gradient)',
               borderRadius: '16px',
               animationDelay: '1.2s',
             }}
@@ -396,7 +396,7 @@ export function Home() {
             type="button"
             onClick={() => navigate(token ? '/myProfile' : '/login')}
             style={{
-              backgroundColor: '#000000',
+              background: 'var(--brand-gradient)',
               color: '#ffffff',
               fontSize: '14px',
               fontWeight: 700,
@@ -515,7 +515,7 @@ export function Home() {
                         borderRadius: '12px',
                         fontSize: '13px',
                         fontWeight: isSelected ? 700 : 500,
-                        backgroundColor: isSelected ? '#000000' : 'transparent',
+                        background: isSelected ? 'var(--brand-gradient)' : 'transparent',
                         color: isSelected ? '#ffffff' : '#6B7280',
                         border: 0,
                         cursor: 'pointer',
@@ -633,7 +633,7 @@ export function Home() {
       {/* 5. BENCHMARKS SECTION */}
       <section style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
         {/* Left Panel */}
-        <div style={{ backgroundColor: '#000000', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', display: 'flex', flexDirection: 'column', justify: 'center', textAlign: 'left' }}>
+        <div style={{ background: 'var(--brand-gradient)', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', display: 'flex', flexDirection: 'column', justify: 'center', textAlign: 'left' }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: '#8B8B9A', letterSpacing: '0.1em', marginBottom: '16px' }}>
             BENCHMARKS
           </div>
@@ -661,7 +661,7 @@ export function Home() {
                     fontWeight: 700,
                     color: isActive ? '#ffffff' : '#8B8B9A',
                     backgroundColor: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
-                    borderLeft: isActive ? '4px solid #000000' : '4px solid transparent',
+                    borderLeft: isActive ? '4px solid var(--brand-primary)' : '4px solid transparent',
                     borderTop: 0,
                     borderRight: 0,
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -679,11 +679,11 @@ export function Home() {
 
         {/* Right Panel */}
         <div style={{ backgroundColor: '#F1F0EC', padding: '64px clamp(24px, 5vw, 80px)', display: 'flex', alignItems: 'center', justify: 'center' }}>
-          <div style={{ backgroundColor: '#000000', color: '#ffffff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '540px', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', textAlign: 'left' }}>
+          <div style={{ background: 'var(--brand-gradient)', color: '#ffffff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '540px', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', textAlign: 'left' }}>
             {/* Legend Row */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '12px', fontWeight: 600, color: '#D1D5DB', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#000000' }} />
+                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--brand-gradient)' }} />
                 <span>GIOP</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -705,7 +705,7 @@ export function Home() {
                     {/* Bar 1 */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
                       <span style={{ fontSize: '10px', fontWeight: 700, color: '#D1D5DB', marginBottom: '4px' }}>{group.giop}{group.suffix}</span>
-                      <div style={{ width: '100%', maxWidth: '24px', backgroundColor: '#000000', borderRadius: '3px 3px 0 0', height: `${group.giop}%`, transition: 'height 0.4s ease' }} />
+                      <div style={{ width: '100%', maxWidth: '24px', background: 'var(--brand-gradient)', borderRadius: '3px 3px 0 0', height: `${group.giop}%`, transition: 'height 0.4s ease' }} />
                     </div>
                     {/* Bar 2 */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
@@ -727,7 +727,7 @@ export function Home() {
       </section>
 
       {/* 6. CLOSING CTA + FOOTER BAND */}
-      <footer style={{ backgroundColor: '#000000', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', textAlign: 'left' }}>
+      <footer style={{ background: 'var(--brand-gradient)', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', textAlign: 'left' }}>
         <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
           <div style={{ fontSize: '12px', fontWeight: 800, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.1em', marginBottom: '16px' }}>
             GIOP PLATFORM

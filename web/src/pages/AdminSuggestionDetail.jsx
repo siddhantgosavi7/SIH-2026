@@ -27,7 +27,7 @@ export function AdminSuggestionDetail() {
       {/* Main Container */}
       <div style={{
         backgroundColor: '#FFFFFF',
-        border: '4px solid #000000',
+        border: '4px solid var(--brand-primary)',
         borderRadius: '16px',
         padding: '32px',
         display: 'flex',
@@ -42,7 +42,7 @@ export function AdminSuggestionDetail() {
           {/* Left Box */}
           <div style={{ 
             flex: 1, 
-            border: '2px solid #000000', 
+            border: '2px solid var(--brand-primary)', 
             borderRadius: '8px', 
             padding: '24px',
             display: 'flex',
@@ -60,7 +60,7 @@ export function AdminSuggestionDetail() {
           {/* Right Box (The Problem) */}
           <div style={{ 
             flex: 1,
-            border: '2px solid #000000', 
+            border: '2px solid var(--brand-primary)', 
             borderRadius: '8px', 
             padding: '24px',
             display: 'flex',
@@ -77,7 +77,7 @@ export function AdminSuggestionDetail() {
         <div style={{
             flex: 1,
             width: '100%',
-            border: '2px solid #000000',
+            border: '2px solid var(--brand-primary)',
             borderRadius: '8px',
             padding: '24px',
             display: 'flex',

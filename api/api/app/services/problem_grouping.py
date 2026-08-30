@@ -217,6 +217,8 @@ def assign_complaint_to_group(
             if score >= threshold:
                 candidate.problem_group_id = best_group.id
 
+    # Flush the assigned problem_group_id so the recalculation query can see it.
+    db.flush()
     _recalculate_group(db, best_group)
 
     # Keep every complaint in the group aligned with the aggregate impact.

@@ -116,7 +116,7 @@ export function Login() {
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            backgroundColor: '#000000',
+            background: 'var(--brand-gradient)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -238,7 +238,7 @@ export function Login() {
             disabled={isSubmitting}
             style={{
               width: '100%',
-              backgroundColor: '#000000',
+              background: 'var(--brand-gradient)',
               color: '#ffffff',
               fontWeight: 700,
               padding: '14px',
