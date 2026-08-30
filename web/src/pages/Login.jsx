@@ -9,7 +9,13 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Clear any stale session when landing on login page
+    logout(false);
+  }, []);
 
   useEffect(() => {
     if (!token || !session?.role) return;
@@ -166,7 +172,7 @@ export function Login() {
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Your password"
                 minLength={8}
                 required
@@ -185,6 +191,24 @@ export function Login() {
                   boxSizing: 'border-box',
                 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "0",
+                  color: "#94a3b8",
+                  display: "flex"
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
             {(errorMessage || message) && (
               <p
