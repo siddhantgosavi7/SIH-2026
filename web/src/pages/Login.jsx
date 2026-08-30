@@ -12,15 +12,10 @@ export function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (token) {
-      if (session?.role === 'admin') {
-        navigate('/admin', { replace: true });
-      } else if (session?.role === 'staff') {
-        navigate('/department', { replace: true });
-      } else {
-        navigate('/myProfile', { replace: true });
-      }
-    }
+    if (!token || !session?.role) return;
+    if (session.role === 'admin') navigate('/admin', { replace: true });
+    else if (session.role === 'staff') navigate('/staff', { replace: true });
+    else if (session.role === 'student') navigate('/student', { replace: true });
   }, [token, session, navigate]);
 
   async function login(event) {
@@ -37,47 +32,20 @@ export function Login() {
     }
 
     try {
-      try {
-        const data = await api('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ username: cleanUsername, password }),
-          headers: {},
-        });
+      const data = await api('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username: cleanUsername, password }),
+      });
 
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('session', JSON.stringify(data));
-        setToken(data.access_token);
-        setSession(data);
-        setMessage('Welcome back to GIOP!');
-        if (data.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
-        return;
-      } catch (backendErr) {
-        if (backendErr.message === 'Failed to fetch' || backendErr.message?.includes('fetch')) {
-          // Only fallback if backend API server is completely offline
-          const isAdmin = cleanUsername === 'admin' && password === 'admin@123';
-          const sessionData = {
-            access_token: 'demo-offline-token',
-            role: isAdmin ? 'admin' : 'student',
-            username: cleanUsername
-          };
-          localStorage.setItem('token', sessionData.access_token);
-          localStorage.setItem('session', JSON.stringify(sessionData));
-          setToken(sessionData.access_token);
-          setSession(sessionData);
-          setMessage('Welcome back to GIOP!');
-          if (sessionData.role === 'admin') {
-            navigate('/admin');
-          } else {
-            navigate('/dashboard');
-          }
-          return;
-        }
-        throw backendErr;
-      }
+      const role = data.role || data.user?.role;
+      const accessToken = data.access_token || data.token;
+      const normalizedSession = { ...data, ...(data.user || {}), role };
+      if (!accessToken || !role) throw new Error('Login response did not contain access_token and role.');
+      if (!['admin', 'staff', 'student'].includes(role)) throw new Error('Unsupported account role.');
+      setToken(accessToken);
+      setSession(normalizedSession);
+      setMessage('Welcome back to GIOP!');
+      navigate(role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/student');
     } catch (err) {
       setErrorMessage(err.message || 'Invalid username or password');
     } finally {
@@ -116,13 +84,13 @@ export function Login() {
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            background: 'var(--brand-gradient)',
+            backgroundColor: '#3D4FFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 16px',
             color: '#ffffff',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+            boxShadow: '0 4px 12px rgba(61, 79, 255, 0.25)',
           }}
         >
           <Compass size={24} />
@@ -133,7 +101,7 @@ export function Login() {
           style={{
             fontSize: '26px',
             fontWeight: 800,
-            color: '#000000',
+            color: '#0B0B12',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
@@ -143,7 +111,7 @@ export function Login() {
         <p
           style={{
             fontSize: '14px',
-            color: '#6B7280',
+            color: '#64748b',
             margin: '0 0 28px 0',
             fontWeight: 500,
           }}
@@ -155,13 +123,13 @@ export function Login() {
         <form onSubmit={login} style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }}>
           {/* Username / Email Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
               Username
             </label>
             <div style={{ position: 'relative' }}>
               <User
                 size={18}
-                color="#9CA3AF"
+                color="#94a3b8"
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
@@ -173,11 +141,11 @@ export function Login() {
                 style={{
                   width: '100%',
                   borderRadius: '12px',
-                  border: '1px solid #D1D5DB',
+                  border: '1px solid #cbd5e1',
                   padding: '12px 14px 12px 42px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#000000',
+                  color: '#0B0B12',
                   backgroundColor: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -188,13 +156,13 @@ export function Login() {
 
           {/* Password Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
               <Lock
                 size={18}
-                color="#9CA3AF"
+                color="#94a3b8"
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
@@ -207,11 +175,11 @@ export function Login() {
                 style={{
                   width: '100%',
                   borderRadius: '12px',
-                  border: '1px solid #D1D5DB',
+                  border: '1px solid #cbd5e1',
                   padding: '12px 14px 12px 42px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#000000',
+                  color: '#0B0B12',
                   backgroundColor: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -221,7 +189,7 @@ export function Login() {
             {(errorMessage || message) && (
               <p
                 style={{
-                  color: errorMessage ? '#4B5563' : '#0F6E82',
+                  color: errorMessage ? '#ef4444' : '#0F6E82',
                   fontSize: '12px',
                   fontWeight: 600,
                   marginTop: '6px',
@@ -238,7 +206,7 @@ export function Login() {
             disabled={isSubmitting}
             style={{
               width: '100%',
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#3D4FFF',
               color: '#ffffff',
               fontWeight: 700,
               padding: '14px',
@@ -248,7 +216,7 @@ export function Login() {
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
               opacity: isSubmitting ? 0.7 : 1,
               marginTop: '8px',
-              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
+              boxShadow: '0 4px 14px rgba(61, 79, 255, 0.3)',
               transition: 'all 0.2s',
             }}
           >
@@ -258,15 +226,15 @@ export function Login() {
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', margin: '28px 0 20px' }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
-          <span style={{ padding: '0 12px', fontSize: '12px', color: '#9CA3AF', fontWeight: 500 }}>or</span>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+          <span style={{ padding: '0 12px', fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
         </div>
 
         {/* Bottom Link */}
-        <p style={{ fontSize: '14px', color: '#6B7280', margin: 0, fontWeight: 500 }}>
+        <p style={{ fontSize: '14px', color: '#64748b', margin: 0, fontWeight: 500 }}>
           Don&apos;t have an account?{' '}
-          <Link to="/signup" style={{ color: '#000000', fontWeight: 700, textDecoration: 'none' }}>
+          <Link to="/signup" style={{ color: '#3D4FFF', fontWeight: 700, textDecoration: 'none' }}>
             Sign up for free
           </Link>
         </p>

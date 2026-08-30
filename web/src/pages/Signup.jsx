@@ -1,30 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Compass, Building } from 'lucide-react';
+import { User, Mail, Lock, Compass } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Signup() {
-  const { setToken, setSession, setMessage, api } = useAuth();
+  const { setMessage, api } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [department, setDepartment] = useState('');
-  const [departments, setDepartments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    async function fetchDepartments() {
-      try {
-        const data = await api('/departments');
-        setDepartments(data);
-      } catch (err) {
-        console.error('Failed to fetch departments', err);
-      }
-    }
-    fetchDepartments();
-  }, [api]);
 
   async function handleSignup(event) {
     event.preventDefault();
@@ -34,10 +20,8 @@ export function Signup() {
     try {
       await api('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, username, department }),
-        headers: {},
+        body: JSON.stringify({ email: email.trim(), password, username: username.trim() }),
       });
-
       setMessage('Account created successfully! Please sign in.');
       navigate('/login');
     } catch (err) {
@@ -72,28 +56,30 @@ export function Signup() {
           boxSizing: 'border-box',
         }}
       >
+        {/* Top Circle Icon */}
         <div
           style={{
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            background: 'var(--brand-gradient)',
+            backgroundColor: '#3D4FFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 16px',
             color: '#ffffff',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+            boxShadow: '0 4px 12px rgba(61, 79, 255, 0.25)',
           }}
         >
           <Compass size={24} />
         </div>
 
+        {/* Heading & Subtitle */}
         <h1
           style={{
             fontSize: '26px',
             fontWeight: 800,
-            color: '#000000',
+            color: '#0B0B12',
             margin: '0 0 6px 0',
             letterSpacing: '-0.02em',
           }}
@@ -103,7 +89,7 @@ export function Signup() {
         <p
           style={{
             fontSize: '14px',
-            color: '#6B7280',
+            color: '#64748b',
             margin: '0 0 28px 0',
             fontWeight: 500,
           }}
@@ -111,20 +97,21 @@ export function Signup() {
           Join GIOP and start managing grievances
         </p>
 
+        {/* Form */}
         <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left' }}>
+          {/* Username Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
               Username
             </label>
             <div style={{ position: 'relative' }}>
               <User
                 size={18}
-                color="#9CA3AF"
+                color="#94a3b8"
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
                 type="text"
-                className="input-with-icon"
                 placeholder="e.g. johndoe"
                 required
                 value={username}
@@ -132,11 +119,11 @@ export function Signup() {
                 style={{
                   width: '100%',
                   borderRadius: '12px',
-                  border: '1px solid #D1D5DB',
+                  border: '1px solid #cbd5e1',
                   padding: '12px 14px 12px 42px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#000000',
+                  color: '#0B0B12',
                   backgroundColor: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -145,55 +132,19 @@ export function Signup() {
             </div>
           </div>
 
+          {/* Email address Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
-              Department
-            </label>
-            <div style={{ position: 'relative' }}>
-              <Building
-                size={18}
-                color="#9CA3AF"
-                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}
-              />
-              <select
-                required
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                style={{
-                  width: '100%',
-                  borderRadius: '12px',
-                  border: '1px solid #D1D5DB',
-                  padding: '12px 14px 12px 42px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#000000',
-                  backgroundColor: '#ffffff',
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                  appearance: 'none',
-                }}
-              >
-                <option value="">Select your department</option>
-                {departments.map((dept) => (
-                  <option key={dept.name} value={dept.name}>{dept.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
               Email address
             </label>
             <div style={{ position: 'relative' }}>
               <Mail
                 size={18}
-                color="#9CA3AF"
+                color="#94a3b8"
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
                 type="email"
-                className="input-with-icon"
                 placeholder="you@example.com"
                 required
                 value={email}
@@ -201,11 +152,11 @@ export function Signup() {
                 style={{
                   width: '100%',
                   borderRadius: '12px',
-                  border: '1px solid #D1D5DB',
+                  border: '1px solid #cbd5e1',
                   padding: '12px 14px 12px 42px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#000000',
+                  color: '#0B0B12',
                   backgroundColor: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -216,18 +167,17 @@ export function Signup() {
 
           {/* Password Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#4B5563', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
               <Lock
                 size={18}
-                color="#9CA3AF"
+                color="#94a3b8"
                 style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
               />
               <input
                 type="password"
-                className="input-with-icon"
                 placeholder="Min. 8 characters"
                 minLength={8}
                 required
@@ -236,11 +186,11 @@ export function Signup() {
                 style={{
                   width: '100%',
                   borderRadius: '12px',
-                  border: '1px solid #D1D5DB',
+                  border: '1px solid #cbd5e1',
                   padding: '12px 14px 12px 42px',
                   fontSize: '14px',
                   fontWeight: 500,
-                  color: '#000000',
+                  color: '#0B0B12',
                   backgroundColor: '#ffffff',
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -248,7 +198,7 @@ export function Signup() {
               />
             </div>
             {errorMessage && (
-              <p style={{ color: '#4B5563', fontSize: '12px', fontWeight: 600, marginTop: '6px' }}>
+              <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 600, marginTop: '6px' }}>
                 {errorMessage}
               </p>
             )}
@@ -260,7 +210,7 @@ export function Signup() {
             disabled={isSubmitting}
             style={{
               width: '100%',
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#3D4FFF',
               color: '#ffffff',
               fontWeight: 700,
               padding: '14px',
@@ -270,7 +220,7 @@ export function Signup() {
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
               opacity: isSubmitting ? 0.7 : 1,
               marginTop: '8px',
-              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
+              boxShadow: '0 4px 14px rgba(61, 79, 255, 0.3)',
               transition: 'all 0.2s',
             }}
           >
@@ -280,15 +230,15 @@ export function Signup() {
 
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', margin: '28px 0 20px' }}>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
-          <span style={{ padding: '0 12px', fontSize: '12px', color: '#9CA3AF', fontWeight: 500 }}>or</span>
-          <div style={{ flex: 1, height: '1px', backgroundColor: '#E5E7EB' }} />
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
+          <span style={{ padding: '0 12px', fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>or</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: '#e2e8f0' }} />
         </div>
 
         {/* Bottom Link */}
-        <p style={{ fontSize: '14px', color: '#6B7280', margin: 0, fontWeight: 500 }}>
+        <p style={{ fontSize: '14px', color: '#64748b', margin: 0, fontWeight: 500 }}>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: '#000000', fontWeight: 700, textDecoration: 'none' }}>
+          <Link to="/login" style={{ color: '#3D4FFF', fontWeight: 700, textDecoration: 'none' }}>
             Log in
           </Link>
         </p>

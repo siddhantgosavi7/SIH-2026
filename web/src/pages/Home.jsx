@@ -17,7 +17,6 @@ import {
   User,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Logo } from '../components/Logo';
 
 const demoResultsMap = {
   Hostel: {
@@ -99,7 +98,7 @@ export function Home() {
   const currentChartGroups = benchmarkDataMap[activeBenchmarkTab];
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', color: '#000000', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#FFFFFF', color: '#0B0B12', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* 1. STICKY NAVBAR */}
       <nav
         style={{
@@ -123,10 +122,41 @@ export function Home() {
           }}
         >
           {/* Left: Logo mark + Wordmark */}
-          <Logo />
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+            <div
+              style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '7px',
+                backgroundColor: '#3D4FFF',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '13px',
+                display: 'grid',
+                placeItems: 'center',
+              }}
+            >
+              G
+            </div>
+            <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.03em', color: '#0B0B12' }}>GIOP</span>
+          </Link>
 
-          {/* Center: Nav links (Removed dummy links for clarity) */}
+          {/* Center: Nav links */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+            {['Product', 'Departments', 'Enterprise', 'Blog', 'Docs', 'Pricing'].map((link) => (
+              <a
+                key={link}
+                href="#"
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: '#3D4FFF',
+                  textDecoration: 'underline',
+                }}
+              >
+                {link}
+              </a>
+            ))}
           </div>
 
           {/* Right: Actions */}
@@ -134,9 +164,9 @@ export function Home() {
             {token ? (
               <>
                 <Link
-                  to="/dashboard"
-                  title={session?.role === 'admin' ? 'Admin Dashboard' : 'My Profile'}
-                  style={{ display: 'flex', alignItems: 'center', color: '#000000' }}
+                  to={session?.role === 'admin' ? '/admin' : '/student'}
+                  title={session?.role === 'admin' ? 'Admin Console' : 'Student Portal'}
+                  style={{ display: 'flex', alignItems: 'center', color: '#3D4FFF' }}
                 >
                   <User size={24} />
                 </Link>
@@ -151,7 +181,7 @@ export function Home() {
                   onClick={() => navigate('/login')}
                   style={{
                     backgroundColor: '#F1F0EC',
-                    color: '#000000',
+                    color: '#0B0B12',
                     fontSize: '13px',
                     fontWeight: 600,
                     borderRadius: '12px',
@@ -165,7 +195,7 @@ export function Home() {
                   type="button"
                   onClick={() => navigate('/login')}
                   style={{
-                    background: 'var(--brand-gradient)',
+                    backgroundColor: '#3D4FFF',
                     color: '#ffffff',
                     fontSize: '13px',
                     fontWeight: 600,
@@ -180,7 +210,7 @@ export function Home() {
                   type="button"
                   onClick={() => navigate('/signup')}
                   style={{
-                    background: 'var(--brand-gradient)',
+                    backgroundColor: '#0B0B12',
                     color: '#ffffff',
                     fontSize: '13px',
                     fontWeight: 600,
@@ -217,9 +247,9 @@ export function Home() {
               top: '40px',
               width: '80px',
               height: '80px',
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#3D4FFF',
               borderRadius: '20px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+              boxShadow: '0 8px 24px rgba(61,79,255,0.2)',
             }}
           />
           <div
@@ -230,7 +260,7 @@ export function Home() {
               top: '150px',
               width: '64px',
               height: '64px',
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#0B0B12',
               borderRadius: '16px',
               animationDelay: '1.8s',
             }}
@@ -243,7 +273,7 @@ export function Home() {
               top: '260px',
               width: '80px',
               height: '110px',
-              background: 'linear-gradient(180deg, #000000 0%, #8B98FF 100%)',
+              background: 'linear-gradient(180deg, #3D4FFF 0%, #8B98FF 100%)',
               borderRadius: '20px',
               animationDelay: '3.5s',
             }}
@@ -280,7 +310,7 @@ export function Home() {
             }}
           >
             <div style={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 700, color: '#8B8B9A', letterSpacing: '0.08em' }}>PRIORITY</div>
-            <div style={{ fontSize: '15px', fontWeight: 800, color: '#000000', marginTop: '2px' }}>High</div>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: '#0B0B12', marginTop: '2px' }}>High</div>
           </div>
 
           {/* Floating Data Card 2 */}
@@ -290,7 +320,7 @@ export function Home() {
               position: 'absolute',
               right: '48px',
               top: '112px',
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#0B0B12',
               color: '#ffffff',
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: '14px',
@@ -317,7 +347,7 @@ export function Home() {
               top: '32px',
               width: '80px',
               height: '80px',
-              background: 'linear-gradient(180deg, #8B98FF 0%, #000000 100%)',
+              background: 'linear-gradient(180deg, #8B98FF 0%, #3D4FFF 100%)',
               borderRadius: '20px',
               animationDelay: '0.8s',
             }}
@@ -330,7 +360,7 @@ export function Home() {
               top: '230px',
               width: '64px',
               height: '96px',
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#3D4FFF',
               borderRadius: '20px',
               animationDelay: '4s',
             }}
@@ -343,7 +373,7 @@ export function Home() {
               top: '350px',
               width: '64px',
               height: '64px',
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#0B0B12',
               borderRadius: '16px',
               animationDelay: '1.2s',
             }}
@@ -368,7 +398,7 @@ export function Home() {
           style={{
             fontSize: 'clamp(42px, 5.5vw, 68px)',
             fontWeight: 800,
-            color: '#000000',
+            color: '#0B0B12',
             letterSpacing: '-0.04em',
             lineHeight: 1.05,
             maxWidth: '900px',
@@ -394,9 +424,9 @@ export function Home() {
         <div style={{ marginTop: '32px' }}>
           <button
             type="button"
-            onClick={() => navigate(token ? '/myProfile' : '/login')}
+            onClick={() => navigate(token ? (session?.role === 'admin' ? '/admin' : '/student') : '/login')}
             style={{
-              background: 'var(--brand-gradient)',
+              backgroundColor: '#0B0B12',
               color: '#ffffff',
               fontSize: '14px',
               fontWeight: 700,
@@ -426,7 +456,7 @@ export function Home() {
         >
           {/* Top row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 500, color: '#6B7280' }}>Hostel water supply — Block A</span>
+            <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>Hostel water supply — Block A</span>
             <span
               style={{
                 backgroundColor: '#EAF7F0',
@@ -454,7 +484,7 @@ export function Home() {
                 borderRadius: '100px',
                 border: '1px solid rgba(0,0,0,0.15)',
                 backgroundColor: '#ffffff',
-                color: '#000000',
+                color: '#0B0B12',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -473,7 +503,7 @@ export function Home() {
                 borderRadius: '100px',
                 border: '1px solid rgba(0,0,0,0.15)',
                 backgroundColor: '#ffffff',
-                color: '#000000',
+                color: '#0B0B12',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -515,8 +545,8 @@ export function Home() {
                         borderRadius: '12px',
                         fontSize: '13px',
                         fontWeight: isSelected ? 700 : 500,
-                        background: isSelected ? 'var(--brand-gradient)' : 'transparent',
-                        color: isSelected ? '#ffffff' : '#6B7280',
+                        backgroundColor: isSelected ? '#0B0B12' : 'transparent',
+                        color: isSelected ? '#ffffff' : '#64748b',
                         border: 0,
                         cursor: 'pointer',
                         transition: 'all 0.2s',
@@ -535,19 +565,19 @@ export function Home() {
               <div style={{ fontSize: '11px', fontWeight: 700, color: '#8B8B9A', letterSpacing: '0.08em', marginBottom: '12px' }}>
                 RESULT
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#F9FAFB', padding: '16px', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.05)' }}>
                 <div style={{ paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#000000' }}>{currentDemo.priority}</div>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0B0B12' }}>{currentDemo.priority}</div>
                   <div style={{ fontSize: '12px', color: '#8B8B9A', marginTop: '3px' }}>{currentDemo.prioritySub}</div>
                 </div>
 
                 <div style={{ paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#000000' }}>{currentDemo.routedTo}</div>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0B0B12' }}>{currentDemo.routedTo}</div>
                   <div style={{ fontSize: '12px', color: '#8B8B9A', marginTop: '3px' }}>{currentDemo.routedSub}</div>
                 </div>
 
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#000000' }}>{currentDemo.related}</div>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0B0B12' }}>{currentDemo.related}</div>
                   <div style={{ fontSize: '12px', color: '#8B8B9A', marginTop: '3px' }}>{currentDemo.relatedSub}</div>
                 </div>
               </div>
@@ -558,7 +588,7 @@ export function Home() {
 
       {/* 4. DEPARTMENTS SECTION */}
       <section style={{ maxWidth: '1150px', margin: '0 auto 96px', padding: '0 24px', textAlign: 'left' }}>
-        <h2 style={{ fontSize: 'clamp(28px, 4vw, 38px)', fontWeight: 800, color: '#000000', letterSpacing: '-0.03em' }}>
+        <h2 style={{ fontSize: 'clamp(28px, 4vw, 38px)', fontWeight: 800, color: '#0B0B12', letterSpacing: '-0.03em' }}>
           Built to run across every department on campus.
         </h2>
         <div style={{ marginTop: '12px' }}>
@@ -570,7 +600,7 @@ export function Home() {
               gap: '6px',
               padding: '8px 16px',
               backgroundColor: '#F1F0EC',
-              color: '#000000',
+              color: '#0B0B12',
               fontSize: '13px',
               fontWeight: 600,
               borderRadius: '100px',
@@ -622,8 +652,8 @@ export function Home() {
                   borderBottom: idx < 5 ? '1px solid rgba(0,0,0,0.08)' : 'none',
                 }}
               >
-                <Icon size={24} color="#000000" />
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#000000' }}>{dept.name}</span>
+                <Icon size={24} color="#0B0B12" />
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0B0B12' }}>{dept.name}</span>
               </div>
             );
           })}
@@ -633,7 +663,7 @@ export function Home() {
       {/* 5. BENCHMARKS SECTION */}
       <section style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
         {/* Left Panel */}
-        <div style={{ background: 'var(--brand-gradient)', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', display: 'flex', flexDirection: 'column', justify: 'center', textAlign: 'left' }}>
+        <div style={{ backgroundColor: '#0B0B12', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', display: 'flex', flexDirection: 'column', justify: 'center', textAlign: 'left' }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: '#8B8B9A', letterSpacing: '0.1em', marginBottom: '16px' }}>
             BENCHMARKS
           </div>
@@ -661,7 +691,7 @@ export function Home() {
                     fontWeight: 700,
                     color: isActive ? '#ffffff' : '#8B8B9A',
                     backgroundColor: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
-                    borderLeft: isActive ? '4px solid var(--brand-primary)' : '4px solid transparent',
+                    borderLeft: isActive ? '4px solid #3D4FFF' : '4px solid transparent',
                     borderTop: 0,
                     borderRight: 0,
                     borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -679,11 +709,11 @@ export function Home() {
 
         {/* Right Panel */}
         <div style={{ backgroundColor: '#F1F0EC', padding: '64px clamp(24px, 5vw, 80px)', display: 'flex', alignItems: 'center', justify: 'center' }}>
-          <div style={{ background: 'var(--brand-gradient)', color: '#ffffff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '540px', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', textAlign: 'left' }}>
+          <div style={{ backgroundColor: '#0B0B12', color: '#ffffff', borderRadius: '20px', padding: '32px', width: '100%', maxWidth: '540px', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', textAlign: 'left' }}>
             {/* Legend Row */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '12px', fontWeight: 600, color: '#D1D5DB', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '12px', fontWeight: 600, color: '#cbd5e1', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--brand-gradient)' }} />
+                <span style={{ width: '12px', height: '12px', borderRadius: '3px', backgroundColor: '#3D4FFF' }} />
                 <span>GIOP</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -704,21 +734,21 @@ export function Home() {
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', width: '100%', justifyContent: 'center', height: '160px' }}>
                     {/* Bar 1 */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#D1D5DB', marginBottom: '4px' }}>{group.giop}{group.suffix}</span>
-                      <div style={{ width: '100%', maxWidth: '24px', background: 'var(--brand-gradient)', borderRadius: '3px 3px 0 0', height: `${group.giop}%`, transition: 'height 0.4s ease' }} />
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#cbd5e1', marginBottom: '4px' }}>{group.giop}{group.suffix}</span>
+                      <div style={{ width: '100%', maxWidth: '24px', backgroundColor: '#3D4FFF', borderRadius: '3px 3px 0 0', height: `${group.giop}%`, transition: 'height 0.4s ease' }} />
                     </div>
                     {/* Bar 2 */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', marginBottom: '4px' }}>{group.helpdesk}{group.suffix}</span>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>{group.helpdesk}{group.suffix}</span>
                       <div style={{ width: '100%', maxWidth: '24px', backgroundColor: '#8B8B9A', borderRadius: '3px 3px 0 0', height: `${group.helpdesk}%`, transition: 'height 0.4s ease' }} />
                     </div>
                     {/* Bar 3 */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', marginBottom: '4px' }}>{group.manual}{group.suffix}</span>
+                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>{group.manual}{group.suffix}</span>
                       <div style={{ width: '100%', maxWidth: '24px', backgroundColor: '#B97A5C', borderRadius: '3px 3px 0 0', height: `${group.manual}%`, transition: 'height 0.4s ease' }} />
                     </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 600, textAlign: 'center', marginTop: '12px' }}>{group.label}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textAlign: 'center', marginTop: '12px' }}>{group.label}</div>
                 </div>
               ))}
             </div>
@@ -727,7 +757,7 @@ export function Home() {
       </section>
 
       {/* 6. CLOSING CTA + FOOTER BAND */}
-      <footer style={{ background: 'var(--brand-gradient)', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', textAlign: 'left' }}>
+      <footer style={{ backgroundColor: '#3D4FFF', color: '#ffffff', padding: '64px clamp(24px, 5vw, 80px)', textAlign: 'left' }}>
         <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
           <div style={{ fontSize: '12px', fontWeight: 800, color: 'rgba(255,255,255,0.8)', letterSpacing: '0.1em', marginBottom: '16px' }}>
             GIOP PLATFORM
