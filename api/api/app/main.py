@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -842,6 +842,30 @@ async def add_attachment(
     db.commit()
     db.refresh(attachment)
     return attachment
+
+
+@app.get("/complaints/{complaint_id}/attachments/{attachment_id}")
+def get_attachment_file(
+    complaint_id: str,
+    attachment_id: int,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    complaint = db.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="complaint not found")
+    enforce_view_complaint(current, complaint)
+    attachment = db.query(Attachment).filter(
+        Attachment.id == attachment_id,
+        Attachment.complaint_id == complaint.id,
+    ).first()
+    if not attachment or not Path(attachment.storage_path).exists():
+        raise HTTPException(status_code=404, detail="attachment file not found")
+    return FileResponse(
+        path=attachment.storage_path,
+        filename=attachment.filename,
+        media_type=attachment.content_type,
+    )
 
 
 @app.post("/intake/email", response_model=ComplaintOut, status_code=status.HTTP_201_CREATED)

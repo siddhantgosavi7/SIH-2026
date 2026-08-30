@@ -94,7 +94,7 @@ export function Signup() {
             fontWeight: 500,
           }}
         >
-          Join GIOP and start managing grievances
+          Join Resolve and start managing grievances
         </p>
 
         {/* Form */}

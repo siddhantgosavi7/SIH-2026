@@ -18,9 +18,9 @@ export function Logo({ to = "/", style = {} }) {
           flexShrink: 0
         }}
       >
-        G
+        R
       </div>
-      <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.03em', color: '#000000' }}>GIOP</span>
+      <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.03em', color: '#000000' }}>Resolve</span>
     </Link>
   );
 }

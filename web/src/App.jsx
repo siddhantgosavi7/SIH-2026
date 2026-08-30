@@ -29,16 +29,37 @@ import { StaffHome } from './pages/staff/StaffHome';
 import { StaffProblems } from './pages/staff/StaffProblems';
 import { StaffProblemDetail } from './pages/staff/StaffProblemDetail';
 import { StaffComplaints } from './pages/staff/StaffComplaints';
+import { CheckCircle2, LogOut, Info, AlertTriangle, X } from 'lucide-react';
 import './styles.css';
 
 function ToastContainer() {
   const { message, setMessage } = useAuth();
+
+  React.useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => {
+      setMessage('');
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [message, setMessage]);
+
   if (!message) return null;
 
+  const msgLower = String(message).toLowerCase();
+  const isLogout = msgLower.includes('logout') || msgLower.includes('logged out') || msgLower.includes('sign out') || msgLower.includes('signed out');
+  const isLoginOrSuccess = msgLower.includes('welcome') || msgLower.includes('login') || msgLower.includes('logged in') || msgLower.includes('success') || msgLower.includes('resolved') || msgLower.includes('created') || msgLower.includes('reopened');
+
+  const type = isLogout ? 'error' : isLoginOrSuccess ? 'success' : 'info';
+
   return (
-    <div className="toast-popup" role="status">
-      <span>{message}</span>
-      <button className="toast-close" onClick={() => setMessage('')} aria-label="Dismiss notification">✕</button>
+    <div key={message} className={`toast-popup toast-${type}`} role="status">
+      {type === 'success' && <CheckCircle2 size={18} className="toast-icon success" />}
+      {type === 'error' && <LogOut size={18} className="toast-icon error" />}
+      {type === 'info' && <Info size={18} className="toast-icon info" />}
+      <span className="toast-text">{message}</span>
+      <button className="toast-close" onClick={() => setMessage('')} aria-label="Dismiss notification">
+        <X size={15} />
+      </button>
     </div>
   );
 }

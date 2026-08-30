@@ -25,7 +25,7 @@ const STATUS_STYLES = {
 export function UserComplaintDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { api, token, apiBaseUrl } = useAuth();
 
   const [complaint,  setComplaint]  = useState(null);
   const [solution,   setSolution]   = useState(null);
@@ -142,9 +142,8 @@ export function UserComplaintDetail() {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      // Wait, api() handles JSON by default. We need a custom fetch for FormData
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:8000/complaints/${id}/attachments`, {
+      // Use apiBaseUrl from context so this works in any deployment environment
+      const res = await fetch(`${apiBaseUrl}/complaints/${id}/attachments`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
@@ -400,16 +399,37 @@ export function UserComplaintDetail() {
                   No attachments yet.
                 </div>
               )}
-              {attachments.map(att => (
-                <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', backgroundColor: '#fafafb', border: '1px solid #e7e8ef', borderRadius: '8px' }}>
-                  <FileIcon size={20} color="#6B7280" />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{att.filename || 'File'}</div>
-                    <div style={{ fontSize: '11px', color: '#6B7280' }}>Uploaded {timeAgo(att.created_at)}</div>
+              {attachments.map(att => {
+                const isPdf = att.content_type === 'application/pdf';
+                const isImage = att.content_type?.startsWith('image/');
+                const fileUrl = `${apiBaseUrl}/complaints/${id}/attachments/${att.id}`;
+                return (
+                  <div key={att.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', backgroundColor: '#fafafb', border: '1px solid #e7e8ef', borderRadius: '8px' }}>
+                    <div style={{
+                      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+                      backgroundColor: isPdf ? '#FEF2F2' : '#EDEBFC',
+                      color: isPdf ? '#DC2626' : '#5B4FE9',
+                      display: 'grid', placeItems: 'center'
+                    }}>
+                      <FileIcon size={16} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600 }}>{att.filename || 'File'}</div>
+                      <div style={{ fontSize: '11px', color: '#6B7280' }}>
+                        {isPdf ? 'PDF' : isImage ? 'Image' : 'File'} · Uploaded {timeAgo(att.created_at)}
+                      </div>
+                    </div>
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ fontSize: '12px', color: '#5B4FE9', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      View / Download
+                    </a>
                   </div>
-                  <a href={att.url || '#'} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}>Download</a>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, Compass } from 'lucide-react';
+import { User, Lock, Compass, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Login() {
-  const { token, session, setToken, setSession, message, setMessage, api } = useAuth();
+  const { token, session, setToken, setSession, message, setMessage, api, logout } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -12,10 +12,7 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Clear any stale session when landing on login page
-    logout(false);
-  }, []);
+
 
   useEffect(() => {
     if (!token || !session?.role) return;
@@ -50,7 +47,7 @@ export function Login() {
       if (!['admin', 'staff', 'student'].includes(role)) throw new Error('Unsupported account role.');
       setToken(accessToken);
       setSession(normalizedSession);
-      setMessage('Welcome back to GIOP!');
+      setMessage('Welcome back to Resolve!');
       navigate(role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/student');
     } catch (err) {
       setErrorMessage(err.message || 'Invalid username or password');
@@ -122,7 +119,7 @@ export function Login() {
             fontWeight: 500,
           }}
         >
-          Log in to your GIOP account
+          Log in to your Resolve account
         </p>
 
         {/* Form */}

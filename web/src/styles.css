@@ -1,7 +1,36 @@
 :root {
+  --bg-page: #F4F5FA;
+  --bg-card: #FFFFFF;
+  --accent: #5B4FE9;
+  --accent-hover: #4A3ED4;
+  --accent-tint: #EDEBFC;
+  --text-primary: #0F0F14;
+  --text-secondary: #6B6F76;
+  --text-muted: #9CA0A8;
+  --border: #E7E8EE;
+  --border-subtle: #F0F1F5;
+  --topbar-bg: #1B1E2B;
+  --topbar-text: #FFFFFF;
+  --status-success: #1E9E5A;
+  --status-success-bg: #EAF7F0;
+  --status-warning: #D98A1F;
+  --status-warning-bg: #FDF4E7;
+  --status-info: #E0A93B;
+  --status-info-bg: #FEF8EC;
+  --status-critical: #DC2626;
+  --status-critical-bg: #FEF2F2;
+  --radius-card: 12px;
+  --radius-panel: 16px;
+  --radius-btn: 8px;
+  --radius-chip: 8px;
+  --radius-pill: 9999px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.02);
+  --shadow-card-hover: 0 6px 20px rgba(91, 79, 233, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-btn: 0 2px 8px rgba(91, 79, 233, 0.25);
+
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1d2630;
-  background: #eef2f5;
+  color: var(--text-primary);
+  background: var(--bg-page);
 }
 
 * {
@@ -223,60 +252,109 @@ textarea {
 
 .toast-popup {
   position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 9999;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-width: 280px;
-  max-width: 420px;
-  padding: 16px 20px;
-  border-radius: 10px;
-  background: #1d2630ee;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 500;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
-  animation: toast-in 0.4s ease, toast-out 0.4s ease 3s forwards;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 12px 20px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1.5px solid #E7E8EE;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12), 0 3px 10px rgba(0, 0, 0, 0.04);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  animation: toast-center-in 0.35s cubic-bezier(0.16, 1, 0.3, 1), toast-center-out 0.4s ease 3s forwards;
+}
+
+.toast-popup.toast-success {
+  background: #F0FDF4;
+  border-color: #86EFAC;
+  color: #15803D;
+}
+
+.toast-popup.toast-success .toast-text {
+  color: #15803D;
+  font-weight: 700;
+}
+
+.toast-popup.toast-success .toast-icon {
+  color: #16A34A;
+  flex-shrink: 0;
+}
+
+.toast-popup.toast-error {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+  color: #DC2626;
+}
+
+.toast-popup.toast-error .toast-text {
+  color: #DC2626;
+  font-weight: 700;
+}
+
+.toast-popup.toast-error .toast-icon {
+  color: #EF4444;
+  flex-shrink: 0;
+}
+
+.toast-popup.toast-info {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #334155;
+}
+
+.toast-popup.toast-info .toast-text {
+  color: #334155;
+  font-weight: 700;
 }
 
 .toast-close {
   background: transparent;
-  color: #94a3b8;
+  color: inherit;
+  opacity: 0.6;
   min-height: auto;
   padding: 0;
-  font-size: 18px;
+  font-size: 16px;
   cursor: pointer;
   line-height: 1;
   margin-left: auto;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
 }
 
 .toast-close:hover {
-  color: #ffffff;
+  opacity: 1;
 }
 
-@keyframes toast-in {
+@keyframes toast-center-in {
   from {
     opacity: 0;
-    transform: translateY(-16px) scale(0.96);
+    transform: translate(-50%, -24px) scale(0.94);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate(-50%, 0) scale(1);
   }
 }
 
-@keyframes toast-out {
+@keyframes toast-center-out {
   from {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translate(-50%, 0) scale(1);
   }
   to {
     opacity: 0;
-    transform: translateY(-16px) scale(0.96);
+    transform: translate(-50%, -20px) scale(0.94);
   }
 }
 

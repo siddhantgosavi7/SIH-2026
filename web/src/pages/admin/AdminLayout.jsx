@@ -47,7 +47,7 @@ export function AdminLayout() {
         <div className="admin-brand">
           <div className="admin-brand-mark"><Sparkles size={18} /></div>
           <div>
-            <strong>GIOP</strong>
+            <strong>Resolve</strong>
             <span>Governance OS</span>
           </div>
         </div>
