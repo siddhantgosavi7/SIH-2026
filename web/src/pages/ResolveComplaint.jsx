@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 export function ResolveComplaint() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { api } = useAuth();
+  const { api, logout } = useAuth();
   
   const [problemGroup, setProblemGroup] = useState(null);
   const [solution, setSolution] = useState('');
@@ -44,10 +44,48 @@ export function ResolveComplaint() {
   return (
     <div style={{ padding: '48px', maxWidth: '1100px', margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif' }}>
       
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#000000', margin: 0, letterSpacing: '-0.02em' }}>
-          Resolve Problem Group
-        </h2>
+      {/* Top Header & Back Button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={() => navigate('/department')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#F3F4F6',
+              color: '#374151',
+              borderRadius: '8px',
+              border: '1px solid #D1D5DB',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '15px'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+          >
+            ← Back
+          </button>
+          <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#000000', margin: 0, letterSpacing: '-0.02em' }}>
+            Resolve Problem Group
+          </h2>
+        </div>
+        
+        <button
+          onClick={logout}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#F3F4F6',
+            color: '#374151',
+            borderRadius: '8px',
+            border: '1px solid #D1D5DB',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '15px'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+        >
+          Logout
+        </button>
       </div>
 
       {/* Main Container */}

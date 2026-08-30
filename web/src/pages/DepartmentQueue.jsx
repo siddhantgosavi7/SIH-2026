@@ -11,7 +11,7 @@ function priorityBand(score) {
 }
 
 export function DepartmentQueue() {
-  const { api } = useAuth();
+  const { api, logout, session } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -60,27 +60,51 @@ export function DepartmentQueue() {
       
       {/* Top Header & Filter */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-        <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#000000', margin: 0, letterSpacing: '-0.02em' }}>
-          Department Dashboard
-        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#000000', margin: 0, letterSpacing: '-0.02em' }}>
+            Department Dashboard
+          </h2>
+          <div style={{ color: '#6B7280', fontSize: '14px', fontWeight: 500 }}>
+            Logged in as {session?.name || session?.email || 'Staff'}
+          </div>
+        </div>
         
-        <div style={{ position: 'relative', width: '300px' }}>
-          <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
-          <input
-            type="text"
-            placeholder="Search problems..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: '300px' }}>
+            <Search size={18} color="#9CA3AF" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              type="text"
+              placeholder="Search problems..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px 16px 12px 42px',
+                borderRadius: '8px',
+                border: '1px solid #D1D5DB',
+                fontSize: '15px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+          <button
+            onClick={logout}
             style={{
-              width: '100%',
-              padding: '12px 16px 12px 42px',
+              padding: '12px 24px',
+              backgroundColor: '#F3F4F6',
+              color: '#374151',
               borderRadius: '8px',
               border: '1px solid #D1D5DB',
-              fontSize: '15px',
-              outline: 'none',
-              boxSizing: 'border-box'
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '15px'
             }}
-          />
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E5E7EB'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
+          >
+            Logout
+          </button>
         </div>
       </div>
 

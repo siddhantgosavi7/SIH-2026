@@ -16,8 +16,12 @@ groups = db.query(ProblemGroup).filter(ProblemGroup.department == "Hostel").all(
 
 # Create dummy complaints so recalculate_group doesn't zero them out
 for group in groups:
-    # Delete existing complaints for this group if any
-    db.query(Complaint).filter(Complaint.problem_group_id == group.id).delete()
+    from app.models import ComplaintEmbedding, ComplaintRelation
+    complaint_ids = [c.id for c in db.query(Complaint.id).filter(Complaint.problem_group_id == group.id).all()]
+    if complaint_ids:
+        db.query(ComplaintEmbedding).filter(ComplaintEmbedding.complaint_id.in_(complaint_ids)).delete(synchronize_session=False)
+        db.query(ComplaintRelation).filter((ComplaintRelation.source_complaint_id.in_(complaint_ids)) | (ComplaintRelation.target_complaint_id.in_(complaint_ids))).delete(synchronize_session=False)
+        db.query(Complaint).filter(Complaint.id.in_(complaint_ids)).delete(synchronize_session=False)
     
     # We will just add `group.complaint_count` dummy complaints if it's currently 0, but since recalculate_group ran, it is 0!
     # Let's hardcode based on title
