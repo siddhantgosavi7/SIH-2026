@@ -4,7 +4,7 @@ import { User, Mail, Lock, Compass } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Signup() {
-  const { setToken, setSession, setMessage, api } = useAuth();
+  const { setMessage, api } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,21 +18,10 @@ export function Signup() {
     setIsSubmitting(true);
 
     try {
-      try {
-        await api('/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({ email, password, username }),
-          headers: {},
-        });
-      } catch (backendErr) {
-        // Fallback for offline/demo mode when FastAPI server is not running locally
-        if (backendErr.message === 'Failed to fetch' || backendErr.message?.includes('fetch')) {
-          console.warn('Backend server offline, creating demo student account locally');
-        } else {
-          throw backendErr;
-        }
-      }
-
+      await api('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), password, username: username.trim() }),
+      });
       setMessage('Account created successfully! Please sign in.');
       navigate('/login');
     } catch (err) {

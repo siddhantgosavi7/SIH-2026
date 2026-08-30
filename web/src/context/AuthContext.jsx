@@ -1,98 +1,85 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
-const API = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
+const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const AuthContext = createContext(null);
 
+function formatApiError(data, status) {
+  if (Array.isArray(data?.detail)) {
+    return data.detail.map((d) => {
+      const loc = Array.isArray(d?.loc) ? `${d.loc.join('.')}: ` : '';
+      return `${loc}${d?.msg || 'Invalid request'}`;
+    }).join(', ');
+  }
+  if (typeof data?.detail === 'string') return data.detail;
+  if (typeof data?.message === 'string') return data.message;
+  if (data?.detail && typeof data.detail === 'object') return JSON.stringify(data.detail);
+  return `Request failed${status ? ` (${status})` : ''}`;
+}
+
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [session, setSession] = useState(JSON.parse(localStorage.getItem('session') || 'null'));
-  const [cases, setCases] = useState([]);
-  const [stats, setStats] = useState(null);
+  const [token, setTokenState] = useState(() => localStorage.getItem('token') || '');
+  const [session, setSessionState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('session') || 'null'); } catch { return null; }
+  });
   const [message, setMessage] = useState('');
 
-  const auth = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+  const setToken = useCallback((value) => {
+    const next = value || '';
+    setTokenState(next);
+    if (next) localStorage.setItem('token', next);
+    else localStorage.removeItem('token');
+  }, []);
 
-  async function api(path, options = {}) {
-    const res = await fetch(`${API}${path}`, {
-      ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}), ...(token ? auth : {}) },
-    });
-    const data = await res.json().catch(() => ({}));
-    const detailMsg = Array.isArray(data.detail)
-      ? data.detail.map((d) => `${d.loc ? d.loc.join('.') + ': ' : ''}${d.msg}`).join(', ')
-      : typeof data.detail === 'string'
-      ? data.detail
-      : typeof data.detail === 'object' && data.detail !== null
-      ? JSON.stringify(data.detail)
-      : 'Request failed';
-    if (!res.ok) {
-      if (res.status === 401) {
-        logout();
-      }
-      throw new Error(detailMsg);
+  const setSession = useCallback((value) => {
+    setSessionState(value || null);
+    if (value) localStorage.setItem('session', JSON.stringify(value));
+    else localStorage.removeItem('session');
+  }, []);
+
+  const logout = useCallback((showMessage = true) => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('session');
+    setTokenState('');
+    setSessionState(null);
+    if (showMessage) setMessage('You are logged out.');
+  }, []);
+
+  const api = useCallback(async (path, options = {}) => {
+    const headers = {
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    };
+
+    let response;
+    try {
+      response = await fetch(`${API}${path}`, { ...options, headers });
+    } catch (error) {
+      throw new Error('Unable to reach the API server. Check that FastAPI is running and VITE_API_BASE_URL is correct.');
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    const data = contentType.includes('application/json')
+      ? await response.json().catch(() => ({}))
+      : await response.text().catch(() => '');
+
+    if (!response.ok) {
+      if (response.status === 401) logout(false);
+      const errorData = typeof data === 'string' ? { detail: data } : data;
+      throw new Error(formatApiError(errorData, response.status));
     }
     return data;
-  }
+  }, [token, logout]);
 
-  async function load() {
-    if (!token) return;
-    try {
-      const list = await api('/complaints');
-      setCases(list);
-      if (session?.role !== 'student') {
-        setStats(await api('/dashboard/department'));
-      }
-    } catch (err) {
-      setMessage(err.message);
-    }
-  }
-
-  useEffect(() => {
-    if (token) {
-      load().catch((err) => setMessage(err.message));
-    } else {
-      setCases([]);
-      setStats(null);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!message) return;
-    const timer = setTimeout(() => setMessage(''), 3500);
-    return () => clearTimeout(timer);
-  }, [message]);
-
-  function logout() {
-    localStorage.clear();
-    setToken('');
-    setSession(null);
-    setCases([]);
-    setStats(null);
-    setMessage('You are logged out!');
-  }
-
-  const value = {
-    token,
-    setToken,
-    session,
-    setSession,
-    cases,
-    stats,
-    message,
-    setMessage,
-    api,
-    load,
-    logout,
-  };
+  const value = useMemo(() => ({
+    token, setToken, session, setSession, message, setMessage, api, logout, apiBaseUrl: API,
+  }), [token, setToken, session, setSession, message, api, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }

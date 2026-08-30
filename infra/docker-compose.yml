@@ -27,7 +27,7 @@ services:
       retries: 10
 
   api:
-    build: { context: ../apps/api }
+    build: { context: ../api/api }
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://complaint:complaint@postgres:5432/complaint_platform
@@ -46,7 +46,7 @@ services:
       retries: 6
 
   worker:
-    build: { context: ../apps/api }
+    build: { context: ../api/api }
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql+asyncpg://complaint:complaint@postgres:5432/complaint_platform
@@ -57,7 +57,7 @@ services:
       api: { condition: service_healthy }
 
   web:
-    build: { context: ../apps/web }
+    build: { context: ../web }
     ports: ["3000:3000"]
     depends_on:
       api: { condition: service_healthy }

@@ -12,13 +12,10 @@ export function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (token) {
-      if (session?.role === 'admin') {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate('/myProfile', { replace: true });
-      }
-    }
+    if (!token || !session?.role) return;
+    if (session.role === 'admin') navigate('/admin', { replace: true });
+    else if (session.role === 'staff') navigate('/staff', { replace: true });
+    else if (session.role === 'student') navigate('/student', { replace: true });
   }, [token, session, navigate]);
 
   async function login(event) {
@@ -35,47 +32,20 @@ export function Login() {
     }
 
     try {
-      try {
-        const data = await api('/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ username: cleanUsername, password }),
-          headers: {},
-        });
+      const data = await api('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username: cleanUsername, password }),
+      });
 
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('session', JSON.stringify(data));
-        setToken(data.access_token);
-        setSession(data);
-        setMessage('Welcome back to GIOP!');
-        if (data.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
-        return;
-      } catch (backendErr) {
-        if (backendErr.message === 'Failed to fetch' || backendErr.message?.includes('fetch')) {
-          // Only fallback if backend API server is completely offline
-          const isAdmin = cleanUsername === 'admin' && password === 'admin@123';
-          const sessionData = {
-            access_token: 'demo-offline-token',
-            role: isAdmin ? 'admin' : 'student',
-            username: cleanUsername
-          };
-          localStorage.setItem('token', sessionData.access_token);
-          localStorage.setItem('session', JSON.stringify(sessionData));
-          setToken(sessionData.access_token);
-          setSession(sessionData);
-          setMessage('Welcome back to GIOP!');
-          if (sessionData.role === 'admin') {
-            navigate('/admin');
-          } else {
-            navigate('/dashboard');
-          }
-          return;
-        }
-        throw backendErr;
-      }
+      const role = data.role || data.user?.role;
+      const accessToken = data.access_token || data.token;
+      const normalizedSession = { ...data, ...(data.user || {}), role };
+      if (!accessToken || !role) throw new Error('Login response did not contain access_token and role.');
+      if (!['admin', 'staff', 'student'].includes(role)) throw new Error('Unsupported account role.');
+      setToken(accessToken);
+      setSession(normalizedSession);
+      setMessage('Welcome back to GIOP!');
+      navigate(role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/student');
     } catch (err) {
       setErrorMessage(err.message || 'Invalid username or password');
     } finally {

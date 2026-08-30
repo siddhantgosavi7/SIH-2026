@@ -1,12 +1,20 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
-import { MyProfile } from './pages/MyProfile';
-import { AdminLayout } from './admin/AdminLayout';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { StudentLayout } from './pages/student/StudentLayout';
+import { StudentHome } from './pages/student/StudentHome';
+import { StudentComplaints } from './pages/student/StudentComplaints';
+import { StudentNewComplaint } from './pages/student/StudentNewComplaint';
+import { StudentComplaintDetail } from './pages/student/StudentComplaintDetail';
+import { StudentProfile } from './pages/student/StudentProfile';
+import { StudentNotifications } from './pages/student/StudentNotifications';
+import { StudentProblems } from './pages/student/StudentProblems';
+import { StudentProblemDetail } from './pages/student/StudentProblemDetail';
 import { AdminHome } from './pages/admin/AdminHome';
 import { AdminProblems } from './pages/admin/AdminProblems';
 import { AdminProblemDetail } from './pages/admin/AdminProblemDetail';
@@ -16,21 +24,21 @@ import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStaff } from './pages/admin/AdminStaff';
 import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
 import { AdminProfile } from './pages/admin/AdminProfile';
+import { StaffLayout } from './pages/staff/StaffLayout';
+import { StaffHome } from './pages/staff/StaffHome';
+import { StaffProblems } from './pages/staff/StaffProblems';
+import { StaffProblemDetail } from './pages/staff/StaffProblemDetail';
+import { StaffComplaints } from './pages/staff/StaffComplaints';
 import './styles.css';
-
-function DashboardEntry() {
-  const { session } = useAuth();
-  return <Navigate to={session?.role === 'admin' ? '/admin' : '/myProfile'} replace />;
-}
 
 function ToastContainer() {
   const { message, setMessage } = useAuth();
   if (!message) return null;
 
   return (
-    <div className="toast-popup" key={message}>
+    <div className="toast-popup" role="status">
       <span>{message}</span>
-      <button className="toast-close" onClick={() => setMessage('')}>✕</button>
+      <button className="toast-close" onClick={() => setMessage('')} aria-label="Dismiss notification">✕</button>
     </div>
   );
 }
@@ -43,22 +51,8 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardEntry />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminLayout />
-              </ProtectedRoute>
-            }
-          >
+
+          <Route path="/admin" element={<ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminHome />} />
             <Route path="problems" element={<AdminProblems />} />
             <Route path="problems/:id" element={<AdminProblemDetail />} />
@@ -69,14 +63,24 @@ export function App() {
             <Route path="audit-logs" element={<AdminAuditLogs />} />
             <Route path="profile" element={<AdminProfile />} />
           </Route>
-          <Route
-            path="/myProfile"
-            element={
-              <ProtectedRoute>
-                <MyProfile />
-              </ProtectedRoute>
-            }
-          />
+
+          <Route path="/staff" element={<ProtectedRoute role="staff"><StaffLayout /></ProtectedRoute>}>
+            <Route index element={<StaffHome />} />
+            <Route path="problems" element={<StaffProblems />} />
+            <Route path="problems/:id" element={<StaffProblemDetail />} />
+            <Route path="complaints" element={<StaffComplaints />} />
+          </Route>
+
+          <Route path="/student" element={<ProtectedRoute role="student"><StudentLayout /></ProtectedRoute>}>
+            <Route index element={<StudentHome />} />
+            <Route path="problems" element={<StudentProblems />} />
+            <Route path="problems/:id" element={<StudentProblemDetail />} />
+            <Route path="complaints" element={<StudentComplaints />} />
+            <Route path="complaints/:id" element={<StudentComplaintDetail />} />
+            <Route path="new" element={<StudentNewComplaint />} />
+            <Route path="profile" element={<StudentProfile />} />
+            <Route path="notifications" element={<StudentNotifications />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <ToastContainer />

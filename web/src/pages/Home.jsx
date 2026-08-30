@@ -164,8 +164,8 @@ export function Home() {
             {token ? (
               <>
                 <Link
-                  to="/dashboard"
-                  title={session?.role === 'admin' ? 'Admin Dashboard' : 'My Profile'}
+                  to={session?.role === 'admin' ? '/admin' : '/student'}
+                  title={session?.role === 'admin' ? 'Admin Console' : 'Student Portal'}
                   style={{ display: 'flex', alignItems: 'center', color: '#3D4FFF' }}
                 >
                   <User size={24} />
@@ -424,7 +424,7 @@ export function Home() {
         <div style={{ marginTop: '32px' }}>
           <button
             type="button"
-            onClick={() => navigate(token ? '/myProfile' : '/login')}
+            onClick={() => navigate(token ? (session?.role === 'admin' ? '/admin' : '/student') : '/login')}
             style={{
               backgroundColor: '#0B0B12',
               color: '#ffffff',

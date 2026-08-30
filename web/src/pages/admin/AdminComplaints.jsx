@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ArrowUpRight, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { asArray, firstSuccessful } from '../../admin/adminApi';
+import { asArray, firstSuccessful } from './adminApi';
 
 export function AdminComplaints() {
   const { api, setMessage } = useAuth();
