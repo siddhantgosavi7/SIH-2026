@@ -3,7 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import case, or_
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session
 
 from app.audit import write_audit
@@ -53,7 +53,7 @@ def list_existing_problems(
     """
     require_role(current, Role.student)
 
-    query = db.query(ProblemGroup).filter(ProblemGroup.status.in_(ACTIVE_GROUP_STATUSES))
+    query = db.query(ProblemGroup).filter(func.lower(ProblemGroup.status).in_(ACTIVE_GROUP_STATUSES))
 
     if department:
         query = query.filter(ProblemGroup.department == department.strip())
@@ -63,7 +63,7 @@ def list_existing_problems(
         normalized_status = status_filter.lower().strip()
         if normalized_status not in ACTIVE_GROUP_STATUSES:
             return []
-        query = query.filter(ProblemGroup.status == normalized_status)
+        query = query.filter(func.lower(ProblemGroup.status) == normalized_status)
     if q:
         term = f"%{q.strip()}%"
         query = query.filter(or_(ProblemGroup.title.ilike(term), ProblemGroup.description.ilike(term)))
@@ -112,7 +112,7 @@ def list_existing_problems(
             id=group.id,
             problem_code=group.problem_code,
             title=group.title,
-            description=group.description,
+            description=group.title,
             department=group.department,
             complaint_count=group.complaint_count,
             affected_users=group.affected_users,
@@ -154,7 +154,7 @@ def suggest_similar_problems(
     )
     text = f"{clean_title}. {clean_description}".strip()
 
-    query = db.query(ProblemGroup).filter(ProblemGroup.status.in_(ACTIVE_GROUP_STATUSES))
+    query = db.query(ProblemGroup).filter(func.lower(ProblemGroup.status).in_(ACTIVE_GROUP_STATUSES))
     if detected_department:
         query = query.filter(ProblemGroup.department == detected_department)
 
@@ -194,7 +194,7 @@ def get_existing_problem(
 ) -> ProblemGroupStudentOut:
     require_role(current, Role.student)
     group = db.query(ProblemGroup).filter(ProblemGroup.id == problem_id).first()
-    if not group or group.status not in ACTIVE_GROUP_STATUSES:
+    if not group or str(group.status).lower() not in ACTIVE_GROUP_STATUSES:
         raise HTTPException(status_code=404, detail="problem not found")
 
     recalculate_group(db, group)
@@ -246,7 +246,7 @@ def report_existing_problem(
     require_role(current, Role.student)
 
     group = db.query(ProblemGroup).filter(ProblemGroup.id == problem_id).first()
-    if not group or group.status not in ACTIVE_GROUP_STATUSES:
+    if not group or str(group.status).lower() not in ACTIVE_GROUP_STATUSES:
         raise HTTPException(status_code=404, detail="problem not found or no longer active")
 
     existing = (

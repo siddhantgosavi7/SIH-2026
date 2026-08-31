@@ -167,7 +167,7 @@ class ProblemComplaintOut(BaseModel):
     id: str
     student_id: int
     title: str
-    description: str
+    description: str =""
     status: str
     priority: str
     created_at: datetime
