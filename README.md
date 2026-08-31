@@ -2,6 +2,7 @@
 
 This is a full-stack web application for a college/institution where **students** file grievances and **department staff** resolve them. The AI automatically:
 - **Categorizes** each complaint into the right department and issue category
+- **Public Problem Discovery:** Students can view existing problems and report their issues against them to avoid duplicates
 - **Detects duplicates** and groups complaints about the same real-world problem
 - **Prioritizes** the grouped problems by urgency and number of affected students
 - **Notifies** students when their complaint is resolved and escalates overdue work (SLAs)

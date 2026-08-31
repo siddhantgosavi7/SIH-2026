@@ -112,7 +112,7 @@ def list_existing_problems(
             id=group.id,
             problem_code=group.problem_code,
             title=group.title,
-            description=group.title,
+            description=group.description,
             department=group.department,
             complaint_count=group.complaint_count,
             affected_users=group.affected_users,
