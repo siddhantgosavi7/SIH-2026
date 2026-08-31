@@ -145,7 +145,10 @@ export function Login() {
                   width: '100%',
                   borderRadius: '12px',
                   border: '1px solid #cbd5e1',
-                  padding: '12px 14px 12px 42px',
+                  paddingTop: '12px',
+                  paddingRight: '14px',
+                  paddingBottom: '12px',
+                  paddingLeft: '42px',
                   fontSize: '14px',
                   fontWeight: 500,
                   color: '#0B0B12',
@@ -179,7 +182,10 @@ export function Login() {
                   width: '100%',
                   borderRadius: '12px',
                   border: '1px solid #cbd5e1',
-                  padding: '12px 14px 12px 42px',
+                  paddingTop: '12px',
+                  paddingRight: '14px',
+                  paddingBottom: '12px',
+                  paddingLeft: '42px',
                   fontSize: '14px',
                   fontWeight: 500,
                   color: '#0B0B12',
@@ -201,7 +207,9 @@ export function Login() {
                   cursor: "pointer",
                   padding: "0",
                   color: "#94a3b8",
-                  display: "flex"
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
                 }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
