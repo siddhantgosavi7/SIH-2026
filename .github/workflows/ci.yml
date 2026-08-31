@@ -27,7 +27,7 @@ jobs:
           - 6379:6379
     defaults:
       run:
-        working-directory: api
+        working-directory: api/api
     env:
       DATABASE_URL: postgresql+psycopg://complaints:complaints@localhost:5432/complaints_test
       JWT_SECRET: ci-only-secret-not-used-in-any-deployment-0123456789

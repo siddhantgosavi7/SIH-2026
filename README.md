@@ -1,62 +1,96 @@
-# SIH Complaint Platform
+# SIH-2026 — Smart Complaint Prioritization System
 
-Deployable starter for a student complaint system with persistent history, login/RBAC, department queues, SLA escalation, audit log, idempotency, rate limiting, attachment validation, email/PDF intake hooks, pgvector duplicate table, tests, Docker, and CI.
+This is a full-stack web application for a college/institution where **students** file grievances and **department staff** resolve them. The AI automatically:
+- **Categorizes** each complaint into the right department and issue category
+- **Detects duplicates** and groups complaints about the same real-world problem
+- **Prioritizes** the grouped problems by urgency and number of affected students
+- **Notifies** students when their complaint is resolved and escalates overdue work (SLAs)
 
-## Quick Start
+## 🚀 Quick Start (Docker)
+
+**Prerequisites:** Docker Compose.
 
 ```bash
-cp api/.env.example api/.env
-docker compose up --build
+# 1. Setup environment variables
+cp api/api/.env.example api/api/.env
+
+# 2. Start all services (Postgres, Redis, API, Worker, Web)
+docker compose up -d --build
+
+# 3. Seed demo data (optional but recommended)
+docker compose exec api python seed_staff.py           # Staff accounts
+docker compose exec api python seed_demo_problems.py   # 3 Hostel problem groups
+docker compose exec api python seed_demo_complaints.py # 58 dummy complaints
 ```
 
-API: `http://localhost:8000`
+### Accessing the System
+- **Frontend App:** [http://localhost:5173](http://localhost:5173)
+- **API Interactive Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-Web: `http://localhost:5173`
+## 👤 Demo Accounts
 
-Docs: `http://localhost:8000/docs`
+| Username | Password | Role | Department |
+|---|---|---|---|
+| hostel_staff | staff@123 | staff | Hostel |
+| cse_staff | staff@123 | staff | CSE |
+| aiml_staff | staff@123 | staff | AIML |
+| csbs_staff | staff@123 | staff | CSBS |
+| mech_staff | staff@123 | staff | Mechanical |
+| elec_staff | staff@123 | staff | Electrical |
+| entc_staff | staff@123 | staff | ENTC |
+| biotech_staff | staff@123 | staff | Biotech |
+| exam_staff | staff@123 | staff | Exam Cell |
+| canteen_staff | staff@123 | staff | Canteen |
 
-The API package layout and complaint pipeline are documented in [api/ARCHITECTURE.md](api/ARCHITECTURE.md).
+**Admin:** Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `api/api/.env`.
+**Students:** Register an account directly at `/signup`.
 
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `api/.env` before first boot. No demo credentials are hard-coded.
+## 💻 Local Development (Without Docker)
 
-The `worker` container runs the RQ queue and re-checks SLAs every
-`SLA_CHECK_INTERVAL_SECONDS` (default 300), escalating breached complaints and
-writing an escalation notification. Delivery goes out over SMTP when `SMTP_HOST`
-and `SMTP_FROM` are set; otherwise the notification is stored and readable at
-`GET /notifications`. `POST /admin/sla-check` forces a check immediately.
-
-## Local API Dev
-
+### Backend (FastAPI)
 ```bash
-cd api
+cd api/api
 python -m venv .venv
-.venv\Scripts\activate       # Windows PowerShell
-# source .venv/bin/activate   # WSL/Linux
-python -m pip install -r requirements.txt
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload
 ```
+API runs on `http://localhost:8000`
 
-Do not install the API requirements into the system Python. On WSL/Linux, use
-`python3 -m venv .venv`, then `.venv/bin/python -m pip install -r requirements.txt`.
-In VS Code, select `api/.venv` as the Python interpreter so imports such as
-`fastapi` in `app/api/routes/dashboard.py` resolve correctly.
-
-The Docker image uses Python 3.12. Python 3.14 is also supported with the
-current SQLAlchemy constraint in `api/requirements.txt`.
-
-## Test
-
+### Frontend (React + Vite)
 ```bash
-cd api
-pytest
+cd web
+npm install
+npm run dev
 ```
+Web runs on `http://localhost:5173`
 
-## Production Notes
+## ⚙️ Environment Variables (`api/api/.env`)
 
-- Use managed PostgreSQL with daily backups and point-in-time recovery.
-- Use managed Redis or a locked-down Redis service.
-- Put API behind HTTPS reverse proxy/load balancer.
-- Rotate `JWT_SECRET` and all SMTP/OIDC secrets with secret manager.
-- Configure `ALLOWED_ORIGINS` to exact production web domain.
-- Add institutional SSO by setting OIDC env values and replacing `/auth/login` with OIDC callback/token verification.
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | YES | — | PostgreSQL connection string |
+| `JWT_SECRET` | YES | — | Min 32 characters |
+| `REDIS_URL` | no | `redis://localhost:6379/0` | Redis |
+| `HF_TOKEN` | no | — | HuggingFace API token |
+| `HF_MODEL` | no | — | HuggingFace model ID |
+| `ADMIN_USERNAME` | no | `admin` | Auto-created admin |
+| `ALLOWED_ORIGINS` | no | `http://localhost:5173,http://127.0.0.1:5173` | CORS allowed origins (comma-sep) |
+| `MAX_UPLOAD_BYTES` | no | `5242880` | Max file size for attachments |
+| `SLA_CHECK_INTERVAL_SECONDS` | no | `300` | Worker polling frequency |
+
+## 📚 Documentation Index
+
+Core documentation has been consolidated into the following key files:
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md):** Oracle Cloud VM + Caddy + sslip.io production setup.
+- **[Doc/ARCHITECTURE.md](Doc/ARCHITECTURE.md):** System architecture, pipeline design, and component mapping.
+- **[Doc/API.md](Doc/API.md):** Live REST API contracts for all roles.
+- **[Doc/AI_PIPELINE.md](Doc/AI_PIPELINE.md):** How categorization, priority scoring, and duplicate detection work.
+- **[Doc/DATA_MODEL.md](Doc/DATA_MODEL.md):** Database schema and entity relationships.
+- **[Doc/17_DEMO_SCRIPT.md](Doc/17_DEMO_SCRIPT.md):** The end-to-end hackathon presentation script.
+- **[Doc/18_JUDGE_QA.md](Doc/18_JUDGE_QA.md):** Questions and strong answers for SIH judges.
+- **[Doc/PS_TRACEABILITY_MATRIX.md](Doc/PS_TRACEABILITY_MATRIX.md):** Mapping features to problem statements MSC02 and SMA03.
+
+*(Note: Developer-specific docs for the backend package exist in `api/api/ARCHITECTURE.md` and `api/api/CORE_PROBLEM_BACKEND.md`)*
