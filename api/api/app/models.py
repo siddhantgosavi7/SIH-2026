@@ -148,6 +148,8 @@ class ProblemGroup(Base):
     status: Mapped[str] = mapped_column(String(32), default=ComplaintStatus.open.value, nullable=False)
     is_emerging: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     emerging_flagged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    generated_brief: Mapped[str | None] = mapped_column(Text, nullable=True)
+    generated_brief_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     solution_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     solution_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     solution_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
