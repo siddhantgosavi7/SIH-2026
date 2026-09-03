@@ -251,6 +251,45 @@ class EmergingAlertOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Public / Transparency Dashboard ───────────────────────────────────────────
+# PRIVACY FENCE: These schemas are returned by the public GET /public/stats
+# endpoint. They MUST NEVER contain:
+#   - complaint titles, descriptions, or any free-text field
+#   - student_id, email, username, PRN, division, roll_no, or any user identifier
+#   - staff names, solution_by_id, or any personnel field
+#   - storage_path, attachment URLs, or any complaint ID
+#   - any field that could identify an individual complaint or complainant
+# Only counts, averages, rates, and department/category labels are allowed.
+
+
+class DeptStatsOut(BaseModel):
+    name: str
+    open_count: int
+    resolved_count: int
+    avg_resolution_hours: float | None  # None if no resolved complaints yet
+    sla_breach_rate: float              # 0.0 – 1.0 fraction of active complaints past SLA
+
+
+class TrendingCategoryOut(BaseModel):
+    category: str
+    count_last_7_days: int
+
+
+class OverallStatsOut(BaseModel):
+    total_open: int
+    total_resolved_this_month: int
+    avg_resolution_hours: float | None
+
+
+class PublicStatsOut(BaseModel):
+    departments: list[DeptStatsOut]
+    trending_categories: list[TrendingCategoryOut]
+    overall: OverallStatsOut
+    last_updated: datetime
+
+
+
+
 class ProblemGroupDetailOut(ProblemGroupSummaryOut):
     students: list[ProblemStudentOut] = []
     complaints: list[ProblemComplaintOut] = []

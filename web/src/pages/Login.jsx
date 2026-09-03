@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, Compass, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Compass, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Login() {
@@ -267,6 +267,12 @@ export function Login() {
             Sign up for free
           </Link>
         </p>
+
+        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+          <Link to="/transparency" style={{ color: '#5B4FE9', fontSize: '13px', fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <ShieldCheck size={14} /> View Public Transparency Dashboard →
+          </Link>
+        </div>
       </div>
     </main>
   );

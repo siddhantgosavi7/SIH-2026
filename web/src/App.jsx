@@ -29,6 +29,7 @@ import { StaffHome } from './pages/staff/StaffHome';
 import { StaffProblems } from './pages/staff/StaffProblems';
 import { StaffProblemDetail } from './pages/staff/StaffProblemDetail';
 import { StaffComplaints } from './pages/staff/StaffComplaints';
+import { PublicDashboard } from './pages/PublicDashboard';
 import { CheckCircle2, LogOut, Info, AlertTriangle, X } from 'lucide-react';
 import './styles.css';
 
@@ -102,6 +103,10 @@ export function App() {
             <Route path="profile" element={<StudentProfile />} />
             <Route path="notifications" element={<StudentNotifications />} />
           </Route>
+
+          {/* Public route — no auth guard, accessible to anyone */}
+          <Route path="/transparency" element={<PublicDashboard />} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <ToastContainer />

@@ -56,6 +56,7 @@ from app.services.intelligent_intake import build_payload
 from app.api.routes.alerts import router as alerts_router
 from app.api.routes.problem_groups import router as problem_groups_router
 from app.api.routes.student_problems import router as student_problems_router
+from app.api.routes.public import router as public_router
 from app.services.problem_grouping import assign_complaint_to_group, recalculate_group, resolve_problem_group
 from app.pipeline.priority import apply_priority
 from app.pipeline.classifier import classify_complaint
@@ -98,6 +99,7 @@ app.add_middleware(
 app.include_router(alerts_router)
 app.include_router(problem_groups_router)
 app.include_router(student_problems_router)
+app.include_router(public_router)  # public — no auth required, see app/api/routes/public.py
 
 
 @app.on_event("startup")
