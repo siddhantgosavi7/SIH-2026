@@ -6,6 +6,11 @@ from sqlalchemy.orm import Session
 from app.models import Complaint, ComplaintStatus, utcnow
 
 
+@pytest.fixture(autouse=True)
+def disable_redis_cache_for_stats(monkeypatch):
+    """Ensure stats are computed from the test DB, not a stale Redis cache in CI."""
+    import app.api.routes.public as public_module
+    monkeypatch.setattr(public_module, "_get_redis", lambda: None)
 def test_public_stats_no_auth_required(client: TestClient):
     """GET /public/stats must be completely public — no Authorization header required."""
     res = client.get("/public/stats")
