@@ -51,7 +51,9 @@ from app.schemas import (
 from app.core.security import create_access_token, hash_password, verify_password
 from app.workers.queue import enqueue_ai_processing
 from app.workers.sla_tasks import check_slas
+from app.workers.emerging_tasks import check_emerging_clusters
 from app.services.intelligent_intake import build_payload
+from app.api.routes.alerts import router as alerts_router
 from app.api.routes.problem_groups import router as problem_groups_router
 from app.api.routes.student_problems import router as student_problems_router
 from app.services.problem_grouping import assign_complaint_to_group, recalculate_group, resolve_problem_group
@@ -93,6 +95,7 @@ app.add_middleware(
 )
 
 
+app.include_router(alerts_router)
 app.include_router(problem_groups_router)
 app.include_router(student_problems_router)
 
@@ -1112,6 +1115,13 @@ def nudge_department(
 def run_sla_check(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
     require_role(current, Role.admin)
     return {"escalated": check_slas(db)}
+
+
+@app.post("/admin/emerging-check")
+def run_emerging_check(current: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict:
+    require_role(current, Role.admin)
+    flagged = check_emerging_clusters(db)
+    return {"flagged": len(flagged)}
 
 
 # ── Comment / Message endpoints ──────────────────────────────────────────────

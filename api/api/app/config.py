@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     upload_dir: str = "/data/uploads"
     max_upload_bytes: int = 5 * 1024 * 1024
     sla_check_interval_seconds: int = 300
+    emerging_velocity_threshold: float = 3.0
+    emerging_min_complaints: int = 5
+    emerging_check_interval_seconds: int = 300
     # Only enable behind a proxy that overwrites X-Forwarded-For. If the header
     # is client-reachable, trusting it lets anyone bypass the rate limiter.
     trust_proxy_headers: bool = False

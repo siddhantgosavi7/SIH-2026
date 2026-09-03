@@ -217,6 +217,7 @@ class ProblemGroupSummaryOut(BaseModel):
     description: str
     department: str
     category: str | None = None
+    location: str | None = None
     complaint_count: int
     affected_users: int
     priority: str
@@ -224,10 +225,28 @@ class ProblemGroupSummaryOut(BaseModel):
     impact_score: float
     priority_score: float
     status: str
+    is_emerging: bool = False
+    emerging_flagged_at: datetime | None = None
     solution_text: str | None = None
     solution_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class EmergingAlertOut(BaseModel):
+    id: str
+    problem_code: str
+    title: str
+    department: str
+    category: str
+    location: str
+    complaint_count: int
+    velocity: float
+    first_complaint_time: datetime
+    latest_complaint_time: datetime | None = None
+    emerging_flagged_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
