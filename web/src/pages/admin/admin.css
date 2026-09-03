@@ -1,4 +1,4 @@
-﻿/* ═══════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════════════
    GIOP ADMIN & DEPARTMENT PANEL — Design System
    Indigo-violet (#5B4FE9) accent · Lavender-gray (#F4F5FA) page bg
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -63,6 +63,9 @@
 .admin-top-actions{display:flex;align-items:center;gap:14px}
 .admin-top-link{display:flex;align-items:center;gap:7px;text-decoration:none;background:var(--accent);color:#fff;font-size:12px;font-weight:700;padding:8px 16px;border-radius:var(--radius-btn);box-shadow:var(--shadow-btn);transition:background .15s}
 .admin-top-link:hover{background:var(--accent-hover);color:#fff}
+.admin-home-btn{display:inline-flex;align-items:center;gap:7px;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);font-size:12px;font-weight:700;padding:8px 14px;border-radius:var(--radius-btn);text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:all .15s ease}
+.admin-home-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-tint);transform:translateY(-1px)}
+.admin-home-btn svg{color:var(--accent)}
 .admin-top-profile{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--text-primary)}
 .mini-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-tint);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:800}
 .admin-content{max-width:1440px;margin:0 auto;padding:32px clamp(20px,3vw,40px)}
