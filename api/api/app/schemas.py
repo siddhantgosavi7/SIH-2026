@@ -96,7 +96,6 @@ class SimilarProblemOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-
 class ComplaintTransition(BaseModel):
     status: ComplaintStatus
     note: str | None = None
@@ -126,10 +125,7 @@ class ComplaintOut(BaseModel):
     source: str
     affected_users: int
     assigned_to_id: int | None
-
-    # FIX: database problem_group_id is PostgreSQL UUID
     problem_group_id: UUID | None = None
-
     sla_due_at: datetime
     duplicate_of_id: str | None
     created_at: datetime
