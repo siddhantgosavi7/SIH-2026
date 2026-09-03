@@ -12,6 +12,7 @@ class TokenOut(BaseModel):
     email: str | None = None
     username: str | None = None
     department: str | None = None
+    profile_completed: bool = False
 
 
 class LoginIn(BaseModel):
@@ -36,6 +37,7 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8)
     role: Role = Role.student
     department: str | None = None
+    profile_completed: bool = False
 
 
 class UserOut(BaseModel):
@@ -44,6 +46,7 @@ class UserOut(BaseModel):
     username: str | None = None
     role: str
     department: str | None
+    profile_completed: bool = False
     student_profile: "StudentProfileOut | None" = None
 
     model_config = {"from_attributes": True}

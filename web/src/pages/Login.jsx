@@ -18,7 +18,10 @@ export function Login() {
     if (!token || !session?.role) return;
     if (session.role === 'admin') navigate('/admin', { replace: true });
     else if (session.role === 'staff') navigate('/staff', { replace: true });
-    else if (session.role === 'student') navigate('/student', { replace: true });
+    else if (session.role === 'student') {
+      if (!session.profile_completed) navigate('/profile/setup', { replace: true });
+      else navigate('/student', { replace: true });
+    }
   }, [token, session, navigate]);
 
   async function login(event) {
@@ -48,7 +51,12 @@ export function Login() {
       setToken(accessToken);
       setSession(normalizedSession);
       setMessage('Welcome back to Resolve!');
-      navigate(role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/student');
+      
+      if (role === 'student' && !normalizedSession.profile_completed) {
+        navigate('/profile/setup', { replace: true });
+      } else {
+        navigate(role === 'admin' ? '/admin' : role === 'staff' ? '/staff' : '/student', { replace: true });
+      }
     } catch (err) {
       setErrorMessage(err.message || 'Invalid username or password');
     } finally {

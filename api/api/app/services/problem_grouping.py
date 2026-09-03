@@ -55,17 +55,17 @@ _NORMALIZATION = {
 
 
 _PHRASE_NORMALIZATION = (
-    (r"\\bnot\\s+working\\b", "failed"),
-    (r"\\bnot\\s+functioning\\b", "failed"),
-    (r"\\bnot\\s+operational\\b", "failed"),
-    (r"\\bdoes\\s+not\\s+work\\b", "failed"),
-    (r"\\bdoesn't\\s+work\\b", "failed"),
+    (r"\bnot\s+working\b", "failed"),
+    (r"\bnot\s+functioning\b", "failed"),
+    (r"\bnot\s+operational\b", "failed"),
+    (r"\bdoes\s+not\s+work\b", "failed"),
+    (r"\bdoesn't\s+work\b", "failed"),
 
     # Equivalent water-facility expressions
-    (r"\\bwater\\s+cooler\\b", "watercooler"),
-    (r"\\bdrinking\\s+water\\s+facility\\b", "watercooler"),
-    (r"\\bdrinking\\s+water\\s+cooler\\b", "watercooler"),
-    (r"\\bwater\\s+dispenser\\b", "watercooler"),
+    (r"\bwater\s+cooler\b", "watercooler"),
+    (r"\bdrinking\s+water\s+facility\b", "watercooler"),
+    (r"\bdrinking\s+water\s+cooler\b", "watercooler"),
+    (r"\bwater\s+dispenser\b", "watercooler"),
 )
 
 

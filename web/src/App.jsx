@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { ProfileSetup } from './pages/ProfileSetup';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { StudentLayout } from './pages/student/StudentLayout';
 import { StudentHome } from './pages/student/StudentHome';
@@ -74,6 +75,7 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/profile/setup" element={<ProtectedRoute role="student"><ProfileSetup /></ProtectedRoute>} />
 
           <Route path="/admin" element={<ProtectedRoute role="admin"><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminHome />} />
