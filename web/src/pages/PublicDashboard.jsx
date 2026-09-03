@@ -126,7 +126,7 @@ export function PublicDashboard() {
           backgroundColor: '#EDEBFC', color: '#5B4FE9', fontSize: '12px', fontWeight: 700,
         }}>
           <ShieldCheck size={14} />
-          Public Transparency Dashboard
+          Departmental Dashboard
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -171,7 +171,7 @@ export function PublicDashboard() {
             <Activity size={12} /> Live Data · No Login Required
           </div>
           <h1 style={{ fontSize: 'clamp(28px,3.5vw,42px)', fontWeight: 800, letterSpacing: '-0.04em', margin: '0 0 10px 0', lineHeight: 1.1 }}>
-            Institutional Transparency Dashboard
+            Departmental Dashboard
           </h1>
           <p style={{ fontSize: '15px', color: '#6B6F76', margin: 0, maxWidth: '680px', lineHeight: 1.65 }}>
             Aggregated complaint resolution data across all departments. No personal or identifying information is shown — only counts, averages, and response rates.
