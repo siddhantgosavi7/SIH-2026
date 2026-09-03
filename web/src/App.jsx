@@ -28,6 +28,7 @@ import { StaffLayout } from './pages/staff/StaffLayout';
 import { StaffHome } from './pages/staff/StaffHome';
 import { StaffProblems } from './pages/staff/StaffProblems';
 import { StaffProblemDetail } from './pages/staff/StaffProblemDetail';
+import { StaffProblemIntelligence } from './pages/staff/StaffProblemIntelligence';
 import { StaffComplaints } from './pages/staff/StaffComplaints';
 import { PublicDashboard } from './pages/PublicDashboard';
 import { CheckCircle2, LogOut, Info, AlertTriangle, X } from 'lucide-react';
@@ -89,6 +90,7 @@ export function App() {
           <Route path="/staff" element={<ProtectedRoute role="staff"><StaffLayout /></ProtectedRoute>}>
             <Route index element={<StaffHome />} />
             <Route path="problems" element={<StaffProblems />} />
+            <Route path="problems/:id/intelligence" element={<StaffProblemIntelligence />} />
             <Route path="problems/:id" element={<StaffProblemDetail />} />
             <Route path="complaints" element={<StaffComplaints />} />
           </Route>
