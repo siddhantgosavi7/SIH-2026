@@ -5,7 +5,7 @@ RUN npm install
 COPY . .
 # Vite inlines env at build time, so this must be a build arg. Passing it at
 # container runtime has no effect on the compiled bundle.
-ARG VITE_API_BASE_URL=http://localhost:8000
+ARG VITE_API_BASE_URL=""
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
