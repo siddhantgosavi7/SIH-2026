@@ -13,11 +13,11 @@ SMA03 is implemented as the **intelligent intake, classification, and routing la
 
 | Requirement | PS | System Capability | Architecture Component | Demo Evidence |
 |---|---|---|---|---|
-| Categorize institutional complaints | MSC02 | AI Complaint Classification (HuggingFace LLM with heuristic fallback) | Intake Layer — `services/intelligent_intake.py` and `services/llm.py` | Complaint routed to correct department (e.g., Hostel/Water Supply) |
-| Assess urgency | MSC02 | Urgency sub-score (derived from SLA proximity, complaint velocity, and LLM priority label) | Grouping Engine — `services/problem_grouping.py` | Dashboard shows priority score driven 55% by Urgency |
-| Assess impact | MSC02 | Impact sub-score (driven by number of affected users joined to the Problem Group) | Grouping Engine — `services/problem_grouping.py` | Priority score increases as multiple students report the same issue |
-| Prioritize complaints | MSC02 | Weighted Priority Score (0–100) driving the staff dashboard | Grouping Engine — `services/problem_grouping.py` | Staff dashboard sorted dynamically by priority score |
-| Detect duplicate/related complaints | MSC02 | Lexical token similarity + sequence matching (≥0.75 dup, ≥0.40 group) | Duplicate Engine — `pipeline/duplicate_detector.py` | Second complaint linked into existing cluster automatically |
+| Categorize institutional complaints | MSC02 | AI Complaint Classification (HuggingFace LLM with heuristic fallback) | Intake Layer — `pipeline/orchestrator.py` and `services/llm.py` | Complaint routed to correct department (e.g., Hostel/Water Supply) |
+| Assess urgency | MSC02 | Urgency sub-score (derived from safety terms, disruption language, and SLA proximity) | Priority Engine — `pipeline/priority.py` | Dashboard shows structured priority reasons reflecting urgency |
+| Assess impact | MSC02 | Impact sub-score (driven by number of affected users and recurrence count) | Priority Engine — `pipeline/priority.py` | Priority score increases as multiple students report the same issue |
+| Prioritize complaints | MSC02 | Multi-Signal Priority Score (0–100) driving the staff dashboard | Priority Engine — `pipeline/priority.py` | Staff dashboard sorted dynamically by priority score |
+| Detect duplicate/related complaints | MSC02 | Semantic Embeddings + Lexical token similarity (≥0.70 dup, ≥0.40 group) | Duplicate Engine — `pipeline/duplicate_detector.py` | Second complaint linked into existing cluster automatically |
 | Intelligent grievance processing (end-to-end) | MSC02 | Central Orchestrator + state machine | Orchestrator — `pipeline/orchestrator.py` | Full lifecycle demo, submission → group resolution → student validation |
 | Actionable prioritized complaint management | MSC02 | Department dashboard grouped by core problems, sorted by priority | UI — `web/src/pages/DepartmentQueue.jsx` | Dashboard screenshot/live view |
 | Classify incoming documents/content | SMA03 | Content classification on web text (and API inputs) | Intake Adapter Layer | Complaint automatically categorized based purely on description text |

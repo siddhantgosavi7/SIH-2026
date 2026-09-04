@@ -41,6 +41,7 @@ The immutable individual record of a student's grievance.
 - `department`, `category`, `subcategory`, `title`, `description`
 - `status` (open, in_progress, resolved, closed, escalated)
 - `priority` (low, normal, high, urgent)
+- `classification_source` (String: "AI" or "RULE")
 - `classification_confidence`, `priority_reasons` (JSON)
 - `affected_users` (synchronized with the parent problem group)
 - `sla_due_at`, `duplicate_of_id`
@@ -76,10 +77,11 @@ Stores the results of the duplicate detection engine.
 - `explanation`
 
 ### `complaint_embeddings`
-Stores semantic embeddings for future LLM integration.
+Stores semantic embeddings for real NN search.
 - `id` (Integer, PK)
 - `complaint_id` (FK -> complaints.id)
-- `embedding` (VectorType - 1536 dim pgvector, falls back to JSONB if pgvector unavailable)
+- `embedding` (VectorType - 384 dim pgvector `MiniLM-L6-v2`)
+- *Index:* HNSW index applied for fast similarity nearest-neighbor search.
 
 ## 4. Communication & Audit
 

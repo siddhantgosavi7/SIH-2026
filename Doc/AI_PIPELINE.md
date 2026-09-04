@@ -11,63 +11,53 @@ flowchart LR
     LLM -->|Success| C{Category & Priority}
     H --> C
     C --> D[Duplicate Detection]
-    D --> |Sim >= 0.75| Exact[Exact Duplicate]
+    D --> |Sim >= 0.70| Exact[Exact Duplicate]
     D --> |Sim >= 0.40| Group[Problem Group Match]
     Group --> P[Priority Scoring Engine]
-    P --> U[Urgency 55%]
-    P --> I[Impact 45%]
-    U & I --> Final[Priority Score 0-100]
+    P --> U[Urgency 45%]
+    P --> I[Impact 40%]
+    P --> B[Cluster Boost 15%]
+    U & I & B --> Final[Priority Score 0-100]
     Final --> Q[Department Queue]
 ```
 
-## 2. Classification & Routing (LLM-First)
+## 2. Classification & Routing
 
-**File:** `services/llm.py`
+**File:** `services/llm.py` and `pipeline/classifier.py`
 
 When a complaint is submitted, it is sent to a HuggingFace Inference API model (e.g., Llama 3 or Mistral).
-- The LLM extracts: `department`, `category`, `priority`, and `priority_reasons`.
-- **Resilience:** The call has an 8-second hard timeout. If the model returns a 503 (cold start) or times out, the system instantly catches the error and falls back.
-- **Validation:** Output is stripped of markdown code fences, parsed as JSON, and strictly validated against the allowed list of 11 departments.
+- The LLM extracts: `department`, `category`.
+- **Classification Source Tracking:** The `classification_source` column records whether the routing was determined by "AI" or "RULE".
+- **Resilience:** The call has an 8-second hard timeout. If the model returns a 503 (cold start) or times out, the system instantly catches the error and falls back to a regex-based heuristic classifier (`pipeline/classifier.py`) which sets `classification_source="RULE"`.
 
-### Heuristic Fallback
-**File:** `pipeline/classifier.py`
+## 3. Semantic Embeddings
 
-If the LLM fails, the system tokenizes the text and performs keyword matching against the `department_policies` table. The highest-scoring policy dictates the department and SLA.
+**File:** `services/embedding_service.py`
 
-## 3. Duplicate Detection & Grouping
+- The system uses `sentence-transformers/all-MiniLM-L6-v2` to generate 384-dimensional embeddings of complaint texts.
+- Embeddings are stored in PostgreSQL using the `pgvector` extension, with an HNSW index configured for fast nearest-neighbor (NN) similarity searches.
+- This allows real semantic search (not just lexical keyword matching) for background deduplication and emerging cluster detection.
+
+## 4. Duplicate & Group Detection
 
 **File:** `pipeline/duplicate_detector.py` and `services/problem_grouping.py`
 
-Rather than using semantic embeddings (which require external infrastructure not always available in a hackathon setting), the system uses a deterministic hybrid string-matching algorithm.
+To prevent staff from resolving the same broken pipe 100 times, GIOP automatically groups similar complaints.
 
-**Similarity Formula:**
-`Score = (0.80 * Jaccard_Token_Overlap) + (0.20 * SequenceMatcher_Ratio)`
+- **Fast Path (Lexical):** During ingestion, a fast synchronous check uses Jaccard similarity.
+- **Exact Duplicate (`>= 0.70`):** The new complaint is marked as a duplicate of an existing one. It does not appear in the department's active queue.
+- **Problem Group (`>= 0.40`):** The new complaint is linked to an overarching `ProblemGroup`.
 
-**Thresholds:**
-- **Exact Duplicate (`≥ 0.75`):** The complaint is flagged as a literal clone of a previous complaint (`duplicate_of_id`).
-- **Problem Group (`≥ 0.40`):** The complaint describes the same real-world issue as an existing active `ProblemGroup`. The complaint is merged into that group, and the group's `affected_users` count increments.
-- **Backfill:** If an old, ungrouped complaint matches the new complaint above the `0.40` threshold, it is backfilled into the new group.
+## 5. Multi-Signal Priority Engine
 
-## 4. Priority Scoring
+**File:** `pipeline/priority.py`
 
-The dashboard sorts problems dynamically using a 0-100 `priority_score`. This score is recalculated every time a student joins a group.
+GIOP uses an explainable multi-signal engine to calculate a priority score (0-100), rather than relying on a black-box LLM output.
 
-**File:** `services/problem_grouping.py`
+- **Safety Risk (30 points):** Triggers on keywords like "harassment", "medical", "fire".
+- **Urgency (25 points):** Triggers on "deadline", "emergency", "immediate". (12 points for service disruption like "water", "electricity").
+- **Affected Users (up to 20 points):** Scales based on how many students have reported the issue (e.g., 50+ students = 20 points).
+- **SLA Risk (15 points):** Boosts priority if the deadline is approaching in < 6 hours.
+- **Recurrence (10 points):** Boosts priority if the problem has been reported multiple times.
 
-### Urgency Score (Weight: ~55%)
-Based on the individual complaint priority labels (which the LLM assigned based on deadline pressure or safety language).
-- Low = 15
-- Normal = 40
-- High = 70
-- Urgent = 95
-The group takes the maximum urgency of its member complaints.
-
-### Impact Score (Weight: ~45%)
-Based purely on the volume of affected students.
-- Formula: `min(100.0, (affected_users / 150.0) * 100.0)`
-- *Note: A secondary linear boost `min(100.0, affected_users * 2) * 0.15` is also applied to heavily weight clusters.*
-
-**Final Calculation:**
-`priority_score = (urgency_score * 0.45) + (impact_score * 0.40) + (cluster_boost * 0.15)`
-
-This produces an explainable, predictable score where a high-urgency issue affecting 1 person (e.g., "locked out of my room") might score an 80, while a medium-urgency issue affecting 100 people (e.g., "no water in block A") might score a 95.
+The final score maps to: Low (<20), Normal (<40), High (<70), Urgent (70+). The engine outputs a structured `priority_reasons` array (e.g., `"63 students affected (+20)"`) so staff understand exactly *why* a complaint is prioritized.

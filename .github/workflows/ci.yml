@@ -41,6 +41,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+      - run: ruff check app/ --select E,F,W --ignore E501
+      - run: mypy app/ --ignore-missing-imports --no-error-summary || true
       - run: alembic upgrade head
       - run: pytest
 
@@ -56,3 +58,9 @@ jobs:
           node-version: "24"
       - run: npm install
       - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f infra/docker-compose.yml build

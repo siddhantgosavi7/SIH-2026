@@ -4,6 +4,20 @@ This document outlines the live HTTP API endpoints provided by the FastAPI backe
 
 All protected endpoints require an `Authorization: Bearer <token>` header.
 
+## Standard Error Format
+
+All API errors (400, 401, 403, 404, 422, 500) follow a standardized JSON envelope to prevent leaking stack traces or raw database errors.
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "HTTP_404",
+    "message": "Complaint not found"
+  }
+}
+```
+
 ## 1. Authentication & Users
 
 - `POST /auth/signup` (or `/auth/register`) — Create a new student account.
@@ -15,7 +29,7 @@ All protected endpoints require an `Authorization: Bearer <token>` header.
 ### Complaints
 - `POST /complaints` — Submit a new complaint. (Accepts `title` and `description` only. Optional `force_new: true` bypasses problem grouping).
 - `GET /complaints` — List the authenticated student's complaint history.
-- `GET /complaints/{id}` — Get full details of a specific complaint.
+- `GET /complaints/{id}` — Get full details of a specific complaint, including `classification_source` ("AI" or "RULE").
 - `GET /complaints/{id}/timeline` — View the audit/lifecycle timeline for a complaint.
 - `POST /complaints/{id}/feedback` — Submit student feedback (accept or reject) on a resolution.
 - `POST /complaints/{id}/reopen` — Request to reopen a resolved complaint.

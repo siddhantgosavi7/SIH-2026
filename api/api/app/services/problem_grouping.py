@@ -187,28 +187,42 @@ def _impact_score(affected_users: int) -> float:
 
 def _recalculate_group(db: Session, group: ProblemGroup) -> None:
     """Rebuild group counters from complaints; never trust frontend counters."""
-    complaints = (
-        db.query(Complaint)
-        .filter(
-            Complaint.problem_group_id == group.id,
-            Complaint.deleted_at.is_(None),
-        )
-        .all()
-    )
+    complaints = [c for c in group.complaints if c.deleted_at is None]
 
     group.complaint_count = len(complaints)
     group.affected_users = len({c.student_id for c in complaints})
-    group.priority = _max_priority([c.priority for c in complaints])
-    
-    group.urgency_score = _urgency_score(complaints)
-    group.impact_score = _impact_score(group.affected_users)
-    # NOTE: affected_users feeds both impact and its own term — acceptable for demo, revisit if judges probe the math
-    group.priority_score = round(
-        group.urgency_score * 0.45
-        + group.impact_score * 0.40
-        + min(100.0, group.affected_users * 2) * 0.15,
-        1,
+    from app.pipeline.priority import apply_priority
+    from app.pipeline.classifier import tokens
+    from app.models import utcnow
+
+    text = f"{group.title} {group.description}"
+    text_tokens = tokens(text)
+
+    # Determine earliest SLA remaining across all open complaints in the group
+    open_complaints = [c for c in complaints if c.status not in (ComplaintStatus.closed.value, ComplaintStatus.resolved.value)]
+    if open_complaints:
+        from app.models import ensure_utc
+        earliest_sla = min(ensure_utc(c.sla_due_at) for c in open_complaints)
+        sla_hours_remaining = (earliest_sla - utcnow()).total_seconds() / 3600.0
+    else:
+        sla_hours_remaining = None
+
+    # Use a dummy complaint to compute the holistic priority score for the entire group
+    dummy = Complaint()
+    result = apply_priority(
+        complaint=dummy,
+        text_tokens=text_tokens,
+        affected_users=group.affected_users,
+        similar_count=group.complaint_count,
+        sla_hours_remaining=sla_hours_remaining
     )
+
+    group.priority = result["priority"]
+    group.priority_score = min(100.0, float(result["score"]))
+    
+    # Update components for backward compatibility with dashboard metrics
+    group.urgency_score = min(100.0, float(result["score"]))
+    group.impact_score = _impact_score(group.affected_users)
 
     # Group status is derived from the member complaints. A single rejected
     # solution/reopened complaint therefore makes the common problem active
@@ -292,7 +306,19 @@ def assign_complaint_to_group(
         created = True
 
     complaint.problem_group_id = best_group.id
-
+    
+    from app.logger import get_complaint_logger
+    group_logger = get_complaint_logger("api.problem_grouping")
+    group_logger.info(
+        "Complaint assigned to group",
+        extra={
+            "complaint_id": complaint.id,
+            "department": complaint.department,
+            "problem_group_id": best_group.id,
+            "similarity_score": round(best_score, 2),
+            "group_created": created
+        }
+    )
     # Backfill old complaints that had no group. This is deliberately limited
     # to the same department and to a bounded candidate set.
     if not created:

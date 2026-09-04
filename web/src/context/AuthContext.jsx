@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
-const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const AuthContext = createContext(null);
 
 function formatApiError(data, status) {
