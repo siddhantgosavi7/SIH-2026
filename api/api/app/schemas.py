@@ -227,10 +227,20 @@ class ProblemGroupSummaryOut(BaseModel):
     status: str
     is_emerging: bool = False
     emerging_flagged_at: datetime | None = None
+    generated_brief: str | None = None
+    generated_brief_at: datetime | None = None
     solution_text: str | None = None
     solution_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ProblemBriefOut(BaseModel):
+    id: str
+    generated_brief: str | None = None
+    generated_brief_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
