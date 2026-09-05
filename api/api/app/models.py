@@ -2,7 +2,7 @@ import enum
 import re
 import uuid
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, Uuid, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, Uuid, UniqueConstraint, Index, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import Text as TextType, TypeDecorator
@@ -27,7 +27,7 @@ class VectorType(TypeDecorator):
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql" and PgVector:
-            return dialect.type_descriptor(PgVector(1536))
+            return dialect.type_descriptor(PgVector(384))
         if dialect.name == "postgresql":
             return dialect.type_descriptor(postgresql.JSONB())
         return dialect.type_descriptor(JSON())
@@ -215,6 +215,7 @@ class Complaint(Base):
     category: Mapped[str] = mapped_column(String(80), nullable=False, default="General")
     subcategory: Mapped[str | None] = mapped_column(String(120))
     classification_confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    classification_source: Mapped[str] = mapped_column(String(32), default="RULE", nullable=False)
     priority_reasons: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
     source: Mapped[str] = mapped_column(String(32), default="web", nullable=False)
     affected_users: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
@@ -277,6 +278,9 @@ class Complaint(Base):
     def student_contact(self) -> str | None:
         return self.student.student_profile.contact_number if (self.student and self.student.student_profile) else None
 
+    __table_args__ = (
+        Index("ix_complaints_dept_status", "department", "status", postgresql_where=text("deleted_at IS NULL")),
+    )
 
 
 class ComplaintRelation(Base):
@@ -355,6 +359,9 @@ class ComplaintEmbedding(Base):
     embedding: Mapped[list[float]] = mapped_column(VectorType(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
+    __table_args__ = (
+        Index("ix_embeddings_hnsw", "embedding", postgresql_using="hnsw", postgresql_with={"m": 16, "ef_construction": 64}, postgresql_ops={"embedding": "vector_cosine_ops"}),
+    )
 
 class Comment(Base):
     __tablename__ = "complaint_comments"

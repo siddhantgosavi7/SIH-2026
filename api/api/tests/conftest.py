@@ -23,6 +23,10 @@ TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=Fals
 
 @pytest.fixture()
 def db() -> Generator[Session, None, None]:
+    import redis
+    redis_client = redis.from_url(os.environ["REDIS_URL"])
+    redis_client.flushdb()
+    
     Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
     u1 = User(email="student@example.edu", username="student", hashed_password=hash_password("password123"), role=Role.student.value, department=None, profile_completed=True)

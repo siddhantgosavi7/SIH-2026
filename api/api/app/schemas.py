@@ -120,6 +120,7 @@ class ComplaintOut(BaseModel):
     category: str
     subcategory: str | None
     classification_confidence: float
+    classification_source: str
     title: str
     description: str
     status: str

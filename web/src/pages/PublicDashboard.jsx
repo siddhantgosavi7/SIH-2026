@@ -14,7 +14,7 @@ import {
   Activity,
 } from 'lucide-react';
 
-const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const API = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
 function slaColor(rate) {
   if (rate <= 0.05) return { dot: '#1E9E5A', bg: '#EAF7F0', label: 'Good', text: '#1E9E5A' };

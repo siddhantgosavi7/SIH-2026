@@ -14,7 +14,7 @@ AI is useful because complaints are unstructured. Our LLM-first pipeline (using 
 
 ## How do you detect duplicates?
 
-We use a combination of lexical token overlap (Jaccard) and sequence matching. If similarity is ≥ 0.75, it's marked as an exact duplicate. If similarity is ≥ 0.40, we group the complaints into a shared "Problem Group". This prevents redundant workloads while preserving individual student records.
+We use real semantic embeddings (SentenceTransformers MiniLM-L6-v2) stored in PostgreSQL with pgvector, alongside lexical token overlap (Jaccard). If similarity is ≥ 0.70, it's marked as an exact duplicate. If similarity is ≥ 0.40, we group the complaints into a shared "Problem Group". This prevents redundant workloads while preserving individual student records.
 
 ## What if the AI model goes down or is slow?
 
@@ -30,10 +30,13 @@ The central registry of individual complaints is the source of truth, while depa
 
 ## How is priority calculated?
 
-We calculate a deterministic Priority Score (0-100) based on:
-- **Urgency (55%):** Driven by the LLM-assessed priority (Low, Normal, High, Urgent) and SLA deadlines.
-- **Impact (45%):** Driven by the proportion of affected users relative to a predefined threshold.
-The dashboard sorts the problem groups dynamically by this Priority Score.
+We calculate a deterministic Priority Score (0-100) using a multi-signal engine based on 5 factors:
+- **Safety Risk (30 pts):** Keywords like medical, fire, harassment.
+- **Urgency (25 pts):** Keywords like deadline, emergency.
+- **Impact (up to 20 pts):** Scaled by the number of affected students.
+- **SLA Risk (15 pts):** Proximity to resolution deadline.
+- **Recurrence (10 pts):** Historical frequency of similar complaints.
+The dashboard sorts the problem groups dynamically by this Priority Score, and staff see a structured explanation of exactly why a score was assigned.
 
 ## What if ten students report the same problem?
 

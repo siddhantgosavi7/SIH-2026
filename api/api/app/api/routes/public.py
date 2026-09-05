@@ -67,7 +67,7 @@ def _compute_stats(db: Session) -> PublicStatsOut:
     All queries use aggregation or lightweight timestamp tuples — raw complaint
     text and user rows are NEVER loaded.
     """
-    from app.main import DEPARTMENTS
+    from app.core.constants import DEPARTMENTS
     from app.models import ensure_utc
 
     now = utcnow()

@@ -12,6 +12,7 @@ class LLMComplaintResult(TypedDict):
     category: str
     priority: str
     priority_reasons: List[str]
+    confidence: float
 
 def analyze_complaint_with_llm(title: str, description: str, allowed_departments: List[str]) -> LLMComplaintResult | None:
     if not settings.hf_token or not settings.hf_model:
@@ -40,7 +41,8 @@ Expected JSON Format:
   "department": "Exact match from one of the allowed departments based on the complaint text",
   "category": "A short 1-3 word category describing the issue (e.g. Plumbing, Electrical, Grading, Network)",
   "priority": "One of: low, normal, high, urgent",
-  "priority_reasons": ["Brief reason 1 for the priority", "Brief reason 2 (if applicable)"]
+  "priority_reasons": ["Brief reason 1 for the priority", "Brief reason 2 (if applicable)"],
+  "confidence": 0.85
 }}
 <|im_end|>
 <|im_start|>assistant
@@ -96,6 +98,11 @@ Expected JSON Format:
             if data["priority"] not in ["low", "normal", "high", "urgent"]:
                 logger.error(f"LLM returned invalid priority: {data['priority']}")
                 return None
+                
+            try:
+                data["confidence"] = float(data.get("confidence", 0.85))
+            except (ValueError, TypeError):
+                data["confidence"] = 0.85
                 
             return data
                 

@@ -27,6 +27,8 @@ class InternalComplaintPayload:
     category: str | None = None
     priority: str | None = None
     priority_reasons: list[str] | None = None
+    classification_source: str = "RULE"
+    classification_confidence: float = 0.0
 
 
 def build_payload(db: Session, title: str, description: str) -> InternalComplaintPayload:
@@ -52,11 +54,15 @@ def build_payload(db: Session, title: str, description: str) -> InternalComplain
         category = llm_result.get("category")
         priority = llm_result.get("priority")
         priority_reasons = llm_result.get("priority_reasons", [])
+        classification_source = "AI"
+        classification_confidence = llm_result.get("confidence", 0.85)
     else:
         department = predict_department(f"{clean_title} {clean_description}")
         category = None
         priority = None
         priority_reasons = None
+        classification_source = "RULE"
+        classification_confidence = 0.0
 
     matches = find_similar_complaints(
         db,
@@ -81,4 +87,6 @@ def build_payload(db: Session, title: str, description: str) -> InternalComplain
         category=category,
         priority=priority,
         priority_reasons=priority_reasons,
+        classification_source=classification_source,
+        classification_confidence=classification_confidence,
     )
